@@ -9,6 +9,7 @@ import { api, cleanupUsers, createUser, insertResource, PASSWORD, signIn, wait, 
 // Needs local Supabase running (`npx supabase start`) and server/.env filled in.
 
 let student: TestUser, otherStudent: TestUser, professor: TestUser, educator: TestUser, otherEducator: TestUser, admin: TestUser
+const startedAt = new Date().toISOString()
 
 beforeAll(async () => {
   ;[student, otherStudent, professor, educator, otherEducator, admin] = await Promise.all([
@@ -21,7 +22,17 @@ beforeAll(async () => {
   ])
 })
 
-afterAll(cleanupUsers)
+// Users cascade-delete their own rows; ops tables are shared, so remove what this run wrote
+// (fake outages, test alerts) so the local admin views stay meaningful.
+afterAll(async () => {
+  await cleanupUsers()
+  await Promise.all([
+    db.from('uptime_checks').delete().gte('created_at', startedAt),
+    db.from('alerts').delete().gte('created_at', startedAt),
+    db.from('error_logs').delete().gte('created_at', startedAt),
+    db.from('notifications').delete().like('type', 'alert_%').gte('created_at', startedAt),
+  ])
+})
 
 describe('S1-29 health', () => {
   it('reports the database is up with a response time', async () => {

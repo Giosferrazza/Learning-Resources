@@ -145,8 +145,8 @@ export default function HomePage() {
                 Found a video that finally made the concept click? Heart it. Your saved resources stay tied to your account so you can return to
                 them later, and you can un-favorite anything at any time.
               </p>
-              <Link to="/favorites" className={primaryBtn}>
-                Sign In to View Favorites
+              <Link to="/register" className={primaryBtn}>
+                Create an Account to Save Favorites
               </Link>
             </div>
             {/* Sample card showing the look of a saved resource; real data comes with S1-36 */}

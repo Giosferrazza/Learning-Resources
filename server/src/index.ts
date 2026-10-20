@@ -1,30 +1,17 @@
 import 'dotenv/config'
-import cors from 'cors'
-import express, { type RequestHandler } from 'express'
-
-const app = express()
-app.use(cors())
-app.use(express.json())
-
-const notImplemented =
-  (task: string): RequestHandler =>
-  (_req, res) => {
-    res.status(501).json({ error: `Not implemented yet (${task})` })
-  }
-
-app.get('/api/health', (_req, res) => {
-  res.json({ ok: true })
-})
-
-// S1-01 Create an account
-app.post('/api/auth/register', notImplemented('S1-01-T02'))
-// S1-03 Change password
-app.post('/api/account/password', notImplemented('S1-03-T02'))
-// S1-04 Update profile information
-app.get('/api/profile', notImplemented('S1-04-T02'))
-app.patch('/api/profile', notImplemented('S1-04-T02'))
+import { createApp } from './app.js'
+import { logError } from './lib/errorLog.js'
+import { startUptimeChecks } from './lib/monitor.js'
 
 const port = Number(process.env.PORT ?? 3001)
-app.listen(port, () => {
+createApp().listen(port, () => {
   console.log(`API listening on http://localhost:${port}`)
+})
+
+// S1-29-T02 scheduled uptime checks (every minute by default)
+startUptimeChecks()
+
+// S1-31 / S1-32: crashes outside a request are critical and alert the admins
+process.on('unhandledRejection', (reason) => {
+  void logError('critical', `Unhandled rejection: ${reason instanceof Error ? reason.message : String(reason)}`, { context: { stack: reason instanceof Error ? reason.stack : undefined } })
 })

@@ -1,1 +1,18 @@
 @import "tailwindcss";
+@import "bootstrap-icons/font/bootstrap-icons.css";
+
+/* Resource Learning brand (from David's styles.css) */
+@theme {
+  --color-rl-navy: #14213d;
+  --color-rl-navy-deep: #0b1426;
+  --color-rl-teal: #1fb5a8;
+  --color-rl-teal-dark: #15897f;
+  --color-rl-gold: #fca311;
+  --color-rl-light: #f4f7fb;
+  --color-rl-text: #1d2733;
+  --font-sans: "Segoe UI", system-ui, -apple-system, "Helvetica Neue", Arial, sans-serif;
+}
+
+html {
+  scroll-behavior: smooth;
+}

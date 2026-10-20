@@ -1,9 +1,9 @@
 import { randomUUID } from 'node:crypto'
 import { Router } from 'express'
-import { currentUser, requireUser } from '../lib/auth'
-import { badRequest, check, notFound, text, maybe } from '../lib/http'
-import { track } from '../lib/events'
-import { db } from '../lib/supabase'
+import { currentUser, requireUser } from '../lib/auth.js'
+import { badRequest, check, notFound, text, maybe } from '../lib/http.js'
+import { track } from '../lib/events.js'
+import { db } from '../lib/supabase.js'
 
 export const listsRouter = Router()
 listsRouter.use(['/favorites', '/lists'], requireUser)

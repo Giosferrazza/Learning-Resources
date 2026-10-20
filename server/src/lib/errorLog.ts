@@ -1,5 +1,5 @@
-import { raiseAlert } from './alerts'
-import { db } from './supabase'
+import { raiseAlert } from './alerts.js'
+import { db } from './supabase.js'
 
 // S1-31-T01 Capture structured errors safely: anything that looks like a secret is redacted
 // before it is stored, and request bodies are never stored whole.

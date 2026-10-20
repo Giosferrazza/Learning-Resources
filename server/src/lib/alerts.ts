@@ -1,4 +1,4 @@
-import { db } from './supabase'
+import { db } from './supabase.js'
 
 // S1-32 Outage and critical-error alerts.
 // Rules (S1-32-T01):
@@ -8,7 +8,8 @@ import { db } from './supabase'
 //   error_burst     5 or more errors within 5 minutes
 // Delivery (S1-32-T02): an in-app notification for every admin, plus a POST to
 // ALERT_WEBHOOK_URL (Slack/Discord/Teams incoming webhook) when it is set.
-// Duplicates (S1-32-T03): the same dedupe key is sent at most once per 15 minutes.
+// Duplicates (S1-32-T03): the same dedupe key is sent at most once per 15 minutes, checked in
+// the alerts table (serverless instances don't share memory) and in memory (in case the database is down).
 
 export type AlertRule = 'outage' | 'recovery' | 'critical_error' | 'error_burst'
 
@@ -23,6 +24,13 @@ export async function raiseAlert(rule: AlertRule, message: string, dedupeKey: st
   const now = Date.now()
   const prev = lastSent.get(dedupeKey)
   if (prev && now - prev < DEDUPE_MS) return false
+  const { data: recent } = await db
+    .from('alerts')
+    .select('id')
+    .eq('dedupe_key', dedupeKey)
+    .gte('created_at', new Date(now - DEDUPE_MS).toISOString())
+    .limit(1)
+  if (recent?.length) return false
   lastSent.set(dedupeKey, now)
 
   const delivered = await Promise.all([notifyAdmins(rule, message), postWebhook(rule, message)])

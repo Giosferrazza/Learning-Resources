@@ -1,6 +1,7 @@
 {
   "name": "learning-resources",
   "private": true,
+  "type": "module",
   "workspaces": [
     "client",
     "server"

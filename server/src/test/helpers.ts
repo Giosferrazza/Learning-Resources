@@ -1,8 +1,8 @@
 import { randomUUID } from 'node:crypto'
 import request from 'supertest'
-import { createApp } from '../app'
-import type { Role } from '../lib/auth'
-import { db, freshClient } from '../lib/supabase'
+import { createApp } from '../app.js'
+import type { Role } from '../lib/auth.js'
+import { db, freshClient } from '../lib/supabase.js'
 
 export const app = createApp()
 export const PASSWORD = 'test-password-1'

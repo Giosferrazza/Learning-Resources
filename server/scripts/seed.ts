@@ -1,6 +1,6 @@
 // Local demo data: one account per role plus a library of published resources.
 // Run with `npm run seed` after `npx supabase start` (safe to run more than once).
-import { db } from '../src/lib/supabase'
+import { db } from '../src/lib/supabase.js'
 
 const PASSWORD = 'demo-password-1' // local demo accounts only
 

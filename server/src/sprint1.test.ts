@@ -1,9 +1,9 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
-import { raiseAlert, resetAlertState } from './lib/alerts'
-import { logError, redact } from './lib/errorLog'
-import { recordCheck, resetMonitorState } from './lib/monitor'
-import { db, freshClient } from './lib/supabase'
-import { api, cleanupUsers, createUser, insertResource, PASSWORD, signIn, wait, type TestUser } from './test/helpers'
+import { raiseAlert, resetAlertState } from './lib/alerts.js'
+import { logError, redact } from './lib/errorLog.js'
+import { recordCheck } from './lib/monitor.js'
+import { db, freshClient } from './lib/supabase.js'
+import { api, cleanupUsers, createUser, insertResource, PASSWORD, signIn, wait, type TestUser } from './test/helpers.js'
 
 // Integration tests for the Sprint 1 T04 "verify" tasks.
 // Needs local Supabase running (`npx supabase start`) and server/.env filled in.
@@ -407,7 +407,6 @@ describe('S1-28-T04 role changes', () => {
 describe('S1-29-T04 / S1-32-T04 failure detection, alerts and recovery', () => {
   it('alerts once on outage and once on recovery', async () => {
     resetAlertState()
-    resetMonitorState()
     await recordCheck({ ok: false, responseMs: 5000, detail: 'test outage' })
     await recordCheck({ ok: false, responseMs: 5000, detail: 'test outage' })
     await recordCheck({ ok: false, responseMs: 5000, detail: 'test outage' })

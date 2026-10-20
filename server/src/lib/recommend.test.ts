@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { recommend, type Answers, type Candidate } from './recommend'
+import { recommend, type Answers, type Candidate } from './recommend.js'
 
 let n = 0
 const res = (over: Partial<Candidate>): Candidate => ({

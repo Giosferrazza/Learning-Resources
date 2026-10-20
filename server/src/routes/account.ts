@@ -1,7 +1,7 @@
 import { Router } from 'express'
-import { currentUser, requireUser } from '../lib/auth'
-import { badRequest, check, HttpError, text } from '../lib/http'
-import { db, freshClient } from '../lib/supabase'
+import { currentUser, requireUser } from '../lib/auth.js'
+import { badRequest, check, HttpError, text } from '../lib/http.js'
+import { db, freshClient } from '../lib/supabase.js'
 
 export const accountRouter = Router()
 accountRouter.use('/me', requireUser)

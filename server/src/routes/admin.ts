@@ -1,9 +1,9 @@
 import { Router } from 'express'
-import { currentUser, requireRole, requireUser, roles, type Role } from '../lib/auth'
-import { badRequest, check, notFound, text, maybe } from '../lib/http'
-import { eventTypes, track } from '../lib/events'
-import { runHealthCheck, uptimeSeconds } from '../lib/monitor'
-import { db } from '../lib/supabase'
+import { currentUser, requireRole, requireUser, roles, type Role } from '../lib/auth.js'
+import { badRequest, check, notFound, text, maybe } from '../lib/http.js'
+import { eventTypes, track } from '../lib/events.js'
+import { runHealthCheck, uptimeSeconds } from '../lib/monitor.js'
+import { db } from '../lib/supabase.js'
 
 export const adminRouter = Router()
 

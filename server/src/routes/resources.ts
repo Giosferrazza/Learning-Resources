@@ -1,9 +1,9 @@
 import { Router, type Request } from 'express'
-import { isGoal, isLevel, isMedium, isSubject } from '../../../shared/vocabulary'
-import { currentUser, requireRole, requireUser, type CurrentUser } from '../lib/auth'
-import { badRequest, check, forbidden, HttpError, notFound, text, maybe } from '../lib/http'
-import { track } from '../lib/events'
-import { db, RESOURCE_BUCKET } from '../lib/supabase'
+import { isGoal, isLevel, isMedium, isSubject } from '../../../shared/vocabulary.js'
+import { currentUser, requireRole, requireUser, type CurrentUser } from '../lib/auth.js'
+import { badRequest, check, forbidden, HttpError, notFound, text, maybe } from '../lib/http.js'
+import { track } from '../lib/events.js'
+import { db, RESOURCE_BUCKET } from '../lib/supabase.js'
 
 export const resourcesRouter = Router()
 resourcesRouter.use(['/library', '/resources', '/notifications'], requireUser)

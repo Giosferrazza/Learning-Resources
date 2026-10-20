@@ -1,7 +1,7 @@
 import 'dotenv/config'
-import { createApp } from './app'
-import { logError } from './lib/errorLog'
-import { startUptimeChecks } from './lib/monitor'
+import { createApp } from './app.js'
+import { logError } from './lib/errorLog.js'
+import { startUptimeChecks } from './lib/monitor.js'
 
 const port = Number(process.env.PORT ?? 3001)
 createApp().listen(port, () => {

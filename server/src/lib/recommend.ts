@@ -1,4 +1,4 @@
-import { goals, levelOrder, levels, media, subjects, type Goal, type Level, type Medium, type Subject } from '../../../shared/vocabulary'
+import { goals, levelOrder, levels, media, subjects, type Goal, type Level, type Medium, type Subject } from '../../../shared/vocabulary.js'
 
 // S1-07 / S1-33 / S1-34 / S1-35 recommendation rules.
 //

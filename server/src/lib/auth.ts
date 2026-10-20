@@ -1,6 +1,6 @@
 import type { Request, RequestHandler } from 'express'
-import { db } from './supabase'
-import { HttpError, forbidden } from './http'
+import { db } from './supabase.js'
+import { HttpError, forbidden } from './http.js'
 
 export type Role = 'student' | 'professor' | 'educator' | 'admin'
 export const roles: Role[] = ['student', 'professor', 'educator', 'admin']

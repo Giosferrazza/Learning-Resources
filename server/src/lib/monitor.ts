@@ -1,5 +1,5 @@
-import { raiseAlert } from './alerts'
-import { db } from './supabase'
+import { raiseAlert } from './alerts.js'
+import { db } from './supabase.js'
 
 // S1-29 Monitor system uptime and performance.
 export type HealthResult = { ok: boolean; responseMs: number; detail: string | null }
@@ -19,33 +19,27 @@ export async function runHealthCheck(): Promise<HealthResult> {
   }
 }
 
-// S1-29-T02: scheduled checks, recorded for the admin monitoring view.
-// Two failures in a row raise an outage alert; the next pass raises a recovery alert (S1-32).
-let consecutiveFailures = 0
-let outageOpen = false
-
+// S1-29-T02: scheduled checks, recorded for the admin monitoring view. Hosted, GitHub Actions
+// calls /api/cron/uptime every 5 minutes; running locally, the API checks every minute itself.
+// State comes from the database so it works across serverless instances:
+// two failures in a row open an outage (alert), the next pass closes it (recovery alert, S1-32).
 export async function recordCheck(result: HealthResult) {
+  const previous = await db.from('uptime_checks').select('ok').order('created_at', { ascending: false }).limit(1).maybeSingle()
   const { error } = await db.from('uptime_checks').insert({ ok: result.ok, response_ms: result.responseMs, detail: result.detail })
   if (error) console.error('uptime check not recorded:', error.message)
 
+  const incident = await db.from('alerts').select('rule').in('rule', ['outage', 'recovery']).order('created_at', { ascending: false }).limit(1).maybeSingle()
+  const outageOpen = incident.data?.rule === 'outage'
+
   if (result.ok) {
-    consecutiveFailures = 0
-    if (outageOpen) {
-      outageOpen = false
-      await raiseAlert('recovery', `Service recovered (database responded in ${result.responseMs} ms)`, `recovery:${Date.now()}`)
-    }
+    if (outageOpen) await raiseAlert('recovery', `Service recovered (database responded in ${result.responseMs} ms)`, `recovery:${Date.now()}`)
     return
   }
-  consecutiveFailures += 1
-  if (consecutiveFailures >= 2 && !outageOpen) {
-    outageOpen = true
-    await raiseAlert('outage', `Health check failed ${consecutiveFailures} times in a row: ${result.detail ?? 'unknown error'}`)
+  // If we can't even read the last check, the database is down: that counts as a second failure
+  const previousFailed = previous.error ? true : previous.data ? !previous.data.ok : false
+  if (previousFailed && !outageOpen) {
+    await raiseAlert('outage', `Health check failed twice in a row: ${result.detail ?? 'unknown error'}`)
   }
-}
-
-export function resetMonitorState() {
-  consecutiveFailures = 0
-  outageOpen = false
 }
 
 export function startUptimeChecks(intervalMs = Number(process.env.UPTIME_INTERVAL_MS ?? 60_000)) {

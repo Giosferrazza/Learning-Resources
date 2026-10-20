@@ -1,10 +1,10 @@
 import { Router } from 'express'
-import { isGoal, isLevel, isMedium, isSubject } from '../../../shared/vocabulary'
-import { currentUser, requireUser } from '../lib/auth'
-import { badRequest, check, HttpError, notFound, text, maybe } from '../lib/http'
-import { track } from '../lib/events'
-import { recommend } from '../lib/recommend'
-import { db } from '../lib/supabase'
+import { isGoal, isLevel, isMedium, isSubject } from '../../../shared/vocabulary.js'
+import { currentUser, requireUser } from '../lib/auth.js'
+import { badRequest, check, HttpError, notFound, text, maybe } from '../lib/http.js'
+import { track } from '../lib/events.js'
+import { recommend } from '../lib/recommend.js'
+import { db } from '../lib/supabase.js'
 
 export const recommendationsRouter = Router()
 recommendationsRouter.use(['/questionnaire', '/recommendations', '/resources/:id/feedback', '/resources/:id/reports'], requireUser)

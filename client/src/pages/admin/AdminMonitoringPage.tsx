@@ -29,7 +29,7 @@ export default function AdminMonitoringPage() {
   return (
     <Page
       title="Uptime and alerts"
-      subtitle={`Checked every minute · ${last24h.checks} checks in the last 24 h${last24h.avgResponseMs ? ` · ${last24h.avgResponseMs} ms average` : ''}`}
+      subtitle={`Checked on a schedule · ${last24h.checks} checks in the last 24 h${last24h.avgResponseMs ? ` · ${last24h.avgResponseMs} ms average` : ''}`}
       actions={
         <Button variant="secondary" onClick={reload} busy={refreshing}>
           <i className="bi bi-arrow-clockwise" /> Refresh

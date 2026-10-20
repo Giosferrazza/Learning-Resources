@@ -15,7 +15,7 @@ export default function AdminPage() {
   return (
     <div className="mx-auto mt-10 grid max-w-2xl gap-3 sm:grid-cols-2">
       {sections.map((s) => (
-        <Link key={s.to} to={s.to} className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm hover:border-indigo-300">
+        <Link key={s.to} to={s.to} className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm hover:border-rl-teal">
           <div className="font-medium">{s.label}</div>
           <div className="text-xs text-slate-500">{s.tasks}</div>
         </Link>

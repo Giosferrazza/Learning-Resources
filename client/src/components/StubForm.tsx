@@ -27,7 +27,7 @@ export default function StubForm({ title, tasks, fields, submitLabel }: Props) {
           <input name={f.name} type={f.type ?? 'text'} className="mt-1 w-full rounded border border-slate-300 px-3 py-2" />
         </label>
       ))}
-      <button type="submit" className="w-full rounded bg-indigo-600 px-3 py-2 font-medium text-white hover:bg-indigo-700">
+      <button type="submit" className="w-full rounded bg-rl-teal px-3 py-2 font-semibold text-white hover:bg-rl-teal-dark">
         {submitLabel}
       </button>
       {message && <p className="text-sm text-amber-700">{message}</p>}

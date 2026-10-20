@@ -6,15 +6,24 @@ IS 495 project: Personalized Learning Resource Recommendation Website.
 
 ## Run it
 
+Needs Node 22+ and Docker Desktop (running). The Supabase CLI comes with `npm install`.
+
 ```sh
 npm install
-npm run dev   # client on http://localhost:5173, API on http://localhost:3001
-npm test      # server tests (vitest + supertest)
+npx supabase start   # local Postgres/Auth/Storage in Docker; applies supabase/migrations
+npx supabase status  # prints the local URL and keys
+npm run dev          # client on http://localhost:5173, API on http://localhost:3001
+npm test             # server tests (vitest + supertest)
 ```
 
-Copy `client/.env.example` to `client/.env.local` and `server/.env.example` to `server/.env`, then fill in the Supabase keys.
+Copy `client/.env.example` to `client/.env.local` and `server/.env.example` to `server/.env`, then fill them from `npx supabase status`:
 
-Apply the schema by running `supabase/migrations/*.sql` in order (Supabase SQL editor, or `supabase db push` with the CLI).
+- `VITE_SUPABASE_URL` / `SUPABASE_URL`: `API_URL` (http://127.0.0.1:54321)
+- `VITE_SUPABASE_ANON_KEY`: `ANON_KEY`
+- `SUPABASE_SERVICE_ROLE_KEY`: `SERVICE_ROLE_KEY` (server only, never in the client)
+
+Local tools: Studio (browse tables) http://127.0.0.1:54323, Mailpit (sign-up and reset emails) http://127.0.0.1:54324.
+After adding a migration, run `npx supabase db reset` to rebuild the local database from scratch.
 
 ## Layout
 

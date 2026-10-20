@@ -10,6 +10,8 @@ type AuthState = {
   loading: boolean
   // Set when we sign someone out for a reason they should see on the sign-in page
   notice: string | null
+  // True after the person chose Sign out, so protected pages send them home, not to sign-in
+  signedOut: boolean
   clearNotice: () => void
   refreshProfile: () => Promise<void>
   signOut: () => Promise<void>
@@ -24,6 +26,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [profile, setProfile] = useState<Profile | null>(null)
   const [loading, setLoading] = useState(true)
   const [notice, setNotice] = useState<string | null>(null)
+  const [signedOut, setSignedOut] = useState(false)
 
   const loadProfile = useCallback(async () => {
     try {
@@ -45,6 +48,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     })
     const { data: sub } = supabase.auth.onAuthStateChange((_event, next) => {
       setSession(next)
+      if (next) setSignedOut(false)
       const nextId = next?.user.id ?? null
       if (nextId !== userId) {
         userId = nextId
@@ -72,12 +76,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [])
 
   const signOut = useCallback(async () => {
+    setSignedOut(true)
     await supabase.auth.signOut()
     setProfile(null)
   }, [])
 
   return (
-    <AuthContext.Provider value={{ session, profile, loading, notice, clearNotice: () => setNotice(null), refreshProfile: loadProfile, signOut }}>
+    <AuthContext.Provider value={{ session, profile, loading, notice, signedOut, clearNotice: () => setNotice(null), refreshProfile: loadProfile, signOut }}>
       {children}
     </AuthContext.Provider>
   )

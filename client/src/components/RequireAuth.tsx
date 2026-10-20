@@ -8,10 +8,11 @@ import { Empty, LinkButton, Loading } from './ui'
 // S1-02-T03 Protected navigation: signed-out visitors go to sign-in and come back afterwards.
 // S1-28-T01: pages limited to some roles show a clear message instead of a broken page.
 export function RequireAuth({ roles, children }: { roles?: Role[]; children: ReactNode }) {
-  const { session, profile, loading } = useAuth()
+  const { session, profile, loading, signedOut } = useAuth()
   const location = useLocation()
 
   if (loading) return <Loading />
+  if (!session && signedOut) return <Navigate to="/" replace />
   if (!session) return <Navigate to={`/login?next=${encodeURIComponent(location.pathname + location.search)}`} replace />
   if (!profile) return <Loading label="Loading your account…" />
   if (!canAccess(profile.role, roles)) {

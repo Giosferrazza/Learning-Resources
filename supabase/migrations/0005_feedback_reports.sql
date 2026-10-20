@@ -53,8 +53,8 @@ create policy "Users can read own reports" on public.reports
 create policy "Admins manage reports" on public.reports
   for all using (public.is_admin());
 
--- TODO(S1-22-T03): users may only flip read_at, not rewrite the message
-create policy "Users manage own notifications" on public.notifications
-  for all using (auth.uid() = user_id);
+create policy "Users read own notifications" on public.notifications
+  for select using (auth.uid() = user_id);
 
--- TODO(S1-22-T01): create a content_flagged notification for the resource owner when a report is filed
+-- Notifications are written by the API: content_flagged when a report is filed (S1-22-T01),
+-- and alerts for admins (S1-32-T02). Marking read goes through the API too (S1-22-T03).

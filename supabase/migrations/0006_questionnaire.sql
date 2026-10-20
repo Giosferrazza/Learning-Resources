@@ -4,7 +4,7 @@ create table if not exists public.questionnaire_responses (
   user_id uuid not null references public.profiles (id) on delete cascade,
   topic text not null,
   knowledge_level text not null,
-  preferred_medium text,
+  preferred_media text[] not null default '{}', -- empty means any format
   goal text, -- S1-33
   created_at timestamptz not null default now()
 );

@@ -2,7 +2,7 @@
 create table if not exists public.usage_events (
   id bigint generated always as identity primary key,
   user_id uuid references public.profiles (id) on delete set null,
-  event_type text not null, -- TODO(S1-30-T01): fix the list of event types
+  event_type text not null, -- see server/src/lib/events.ts for the list
   metadata jsonb not null default '{}',
   created_at timestamptz not null default now()
 );
@@ -34,6 +34,19 @@ create index if not exists alerts_dedupe_idx on public.alerts (dedupe_key, creat
 alter table public.usage_events enable row level security;
 alter table public.error_logs enable row level security;
 alter table public.alerts enable row level security;
+
+-- S1-29-T02: one row per scheduled health check
+create table if not exists public.uptime_checks (
+  id bigint generated always as identity primary key,
+  ok boolean not null,
+  response_ms integer not null,
+  detail text,
+  created_at timestamptz not null default now()
+);
+
+create index if not exists uptime_checks_created_idx on public.uptime_checks (created_at desc);
+alter table public.uptime_checks enable row level security;
+create policy "Admins read uptime checks" on public.uptime_checks for select using (public.is_admin());
 
 -- Writes come from the API with the service role; only admins read.
 create policy "Admins read usage events" on public.usage_events for select using (public.is_admin());

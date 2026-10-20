@@ -1,0 +1,10 @@
+# Local secrets and tooling never go to Vercel; production values come from project env vars
+.env
+.env.*
+**/.env
+**/.env.*
+supabase/.temp
+supabase/.branches
+node_modules
+**/node_modules
+**/dist

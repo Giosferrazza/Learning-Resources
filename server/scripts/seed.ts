@@ -1,6 +1,13 @@
 // Local demo data: one account per role plus a library of published resources.
 // Run with `npm run seed` after `npx supabase start` (safe to run more than once).
+//
+// Hosted: `npm run seed -- --owner you@example.com` with SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY
+// pointing at the hosted project. It makes that existing account an admin and publishes the sample
+// resources under it, and never creates the demo accounts (their password is in this public repo).
 import { db } from '../src/lib/supabase.js'
+
+const ownerFlag = process.argv.indexOf('--owner')
+const ownerEmail = ownerFlag > -1 ? process.argv[ownerFlag + 1] : null
 
 const PASSWORD = 'demo-password-1' // local demo accounts only
 
@@ -56,7 +63,16 @@ async function ensureUser(p: (typeof people)[number]) {
   return id
 }
 
-const ids = Object.fromEntries(await Promise.all(people.map(async (p) => [p.role, await ensureUser(p)])))
+async function hostedOwner(email: string) {
+  const { data, error } = await db.from('profiles').select('id').eq('email', email).maybeSingle()
+  if (error || !data) throw new Error(`No account for ${email}. Sign up on the site first.`)
+  await db.from('profiles').update({ role: 'admin' }).eq('id', data.id)
+  return data.id as string
+}
+
+const ids: Record<string, string> = ownerEmail
+  ? await hostedOwner(ownerEmail).then((id) => ({ admin: id, educator: id }))
+  : Object.fromEntries(await Promise.all(people.map(async (p) => [p.role, await ensureUser(p)])))
 
 const { count } = await db.from('resources').select('id', { count: 'exact', head: true }).eq('owner_id', ids.educator)
 if (!count) {
@@ -93,4 +109,8 @@ if (!count) {
   })
 }
 
-console.log(`Seeded ${people.length} demo accounts (password in server/scripts/seed.ts) and ${resources.length} published resources.`)
+console.log(
+  ownerEmail
+    ? `${ownerEmail} is now an admin and owns ${resources.length} published sample resources.`
+    : `Seeded ${people.length} demo accounts (password in server/scripts/seed.ts) and ${resources.length} published resources.`,
+)

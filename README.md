@@ -52,6 +52,10 @@ People choose student, professor or educator at sign-up. Only an admin can make 
 - `server/src/sprint1.test.ts` integration tests for every T04 task; `server/src/lib/recommend.test.ts` matching rules
 - `supabase/migrations/` schema; `supabase/config.toml` local Supabase settings
 
+## Optional YouTube discovery
+
+The recommendations page can find live YouTube videos using the saved questionnaire and an optional specific learning focus. Set the server-side `YOUTUBE_API_KEY` for YouTube Data API v3. Set `OPENAI_API_KEY` to generate improved search queries via the OpenAI Responses API; otherwise rule-based queries are used. Keep API keys outside Vite/client variables. Video results are not educator-reviewed and cannot yet be saved to favorites.
+
 ## How it works
 
 - **Auth (S1-01 to S1-05):** Supabase Auth in the browser; a database trigger creates the profile at sign-up. The API checks the access token and reloads the profile on every request, so role changes and suspensions apply immediately. Password reset emails land in Mailpit locally.

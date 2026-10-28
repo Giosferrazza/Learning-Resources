@@ -13,6 +13,7 @@ import { useApi } from '../lib/useApi'
 
 type Item = { resource: Resource; exact: boolean; reasons: string[]; gaps: string[] }
 type Result = { responseId: string; answers: { topic: Subject; level: Level; media: Medium[]; goal: Goal | null }; libraryEmpty: boolean; exact: boolean; items: Item[] }
+type YouTubeResults = { query: string; querySource: 'ai' | 'rules'; videos: Array<{ id: string; title: string; channel: string; description: string; thumbnail: string | null; url: string }> }
 
 // S1-07 results, S1-34 why, S1-35 closest matches, S1-08 save the whole list, S1-11-T03 professors add to lists
 export default function RecommendationsPage() {
@@ -23,6 +24,10 @@ export default function RecommendationsPage() {
   const { data, error, loading, reload } = useApi<Result>(`/recommendations${responseId ? `?responseId=${responseId}` : ''}`)
   const [formatFilter, setFormatFilter] = useState<string | null>(null)
   const [saved, setSaved] = useState<{ busy?: boolean; ok?: string; error?: string }>({})
+  const [focus, setFocus] = useState('')
+  const [youtube, setYoutube] = useState<YouTubeResults | null>(null)
+  const [youtubeError, setYoutubeError] = useState('')
+  const [youtubeLoading, setYoutubeLoading] = useState(false)
 
   const visible = useMemo(() => (data?.items ?? []).filter((i) => !formatFilter || i.resource.medium === formatFilter), [data, formatFilter])
   const formats = useMemo(() => [...new Set((data?.items ?? []).map((i) => i.resource.medium).filter(Boolean))] as Medium[], [data])
@@ -55,6 +60,21 @@ export default function RecommendationsPage() {
       setSaved({ ok: `Saved as “${list.name}” in your favorites.` })
     } catch (err) {
       setSaved({ error: errorMessage(err) })
+    }
+  }
+
+  async function findYouTubeVideos() {
+    setYoutubeLoading(true)
+    setYoutubeError('')
+    setYoutube(null)
+    try {
+      const query = new URLSearchParams({ responseId: data!.responseId, focus })
+      const results = await api<YouTubeResults>(`/youtube/recommendations?${query}`)
+      setYoutube(results)
+    } catch (err) {
+      setYoutubeError(errorMessage(err))
+    } finally {
+      setYoutubeLoading(false)
     }
   }
 
@@ -151,6 +171,41 @@ export default function RecommendationsPage() {
             </div>
           </>
         )}
+        <section className="rounded-xl border border-slate-200 bg-white p-5">
+          <h2 className="text-lg font-semibold text-slate-800">Discover YouTube videos</h2>
+          <p className="mt-1 text-sm text-slate-600">Search beyond our curated library using your questionnaire. These videos have not been reviewed by our educators.</p>
+          <label htmlFor="youtube-focus" className="mt-3 block text-sm font-medium text-slate-700">Specific topic (optional)</label>
+          <input
+            id="youtube-focus"
+            className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+            placeholder="e.g., Python for loops"
+            maxLength={120}
+            value={focus}
+            onChange={(e) => setFocus(e.target.value)}
+          />
+          <Button onClick={findYouTubeVideos} busy={youtubeLoading} className="mt-3">Find YouTube videos</Button>
+          {youtubeError && <Alert kind="error">{youtubeError}</Alert>}
+          {youtube && (
+            <div className="mt-4">
+              <p className="text-sm text-slate-600">{youtube.querySource === 'ai' ? 'AI-assisted' : 'Standard'} search: {youtube.query}</p>
+              {youtube.videos.length === 0 ? (
+                <p className="mt-2 text-sm text-slate-600">No videos found. Try a different specific topic.</p>
+              ) : (
+                <ul className="mt-3 grid gap-3 md:grid-cols-2">
+                  {youtube.videos.map((video) => (
+                    <li key={video.id} className="rounded-lg border border-slate-200 p-3">
+                      <a href={video.url} target="_blank" rel="noopener noreferrer" className="font-medium text-rl-teal hover:underline">
+                        {video.thumbnail && <img src={video.thumbnail} alt="" loading="lazy" className="mb-2 aspect-video w-full rounded object-cover" />}
+                        {video.title}
+                      </a>
+                      <p className="mt-1 text-xs text-slate-500">{video.channel}</p>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          )}
+        </section>
       </div>
     </Page>
   )

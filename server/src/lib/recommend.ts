@@ -18,7 +18,7 @@ import { goals, levelOrder, levels, media, subjects, type Goal, type Level, type
 // Ties (both lists, S1-33-T03): goal match first, then newest, then title A-Z.
 // Untagged level or format never earns points and is called out in the explanation.
 
-export type Answers = { topic: Subject; level: Level; media: Medium[]; goal: Goal | null }
+export type Answers = { topic: Subject; level: Level; media: Medium[]; goal: Goal | null; learningRequest?: string | null }
 
 export type Candidate = {
   id: string

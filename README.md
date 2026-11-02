@@ -52,9 +52,27 @@ People choose student, professor or educator at sign-up. Only an admin can make 
 - `server/src/sprint1.test.ts` integration tests for every T04 task; `server/src/lib/recommend.test.ts` matching rules
 - `supabase/migrations/` schema; `supabase/config.toml` local Supabase settings
 
-## Optional YouTube discovery
+## Automatic YouTube discovery
 
-The recommendations page can find live YouTube videos using the saved questionnaire and an optional specific learning focus. Set the server-side `YOUTUBE_API_KEY` for YouTube Data API v3. Set `OPENAI_API_KEY` to generate improved search queries via the OpenAI Responses API; otherwise rule-based queries are used. Keep API keys outside Vite/client variables. Video results are not educator-reviewed and cannot yet be saved to favorites.
+The four questionnaire fields are unchanged. The optional "What specifically do you want to learn?" text (500 characters maximum) is saved as `questionnaire_responses.learning_request` and prefilled on return. Apply `supabase/migrations/0008_learning_request.sql` before deploying this version; existing rows remain valid with NULL. Existing ownership RLS is unchanged.
+
+After submission, the browser loads curated recommendations and automatically requests YouTube videos for that saved response ID. Both endpoints authenticate the user and check questionnaire ownership. Curated results render while videos load, and remain usable if video search is unavailable. One format filter covers the combined cards. YouTube cards are explicitly unreviewed; favorites, explanations and saved lists continue to use curated resource IDs only.
+
+Set server-side `YOUTUBE_API_KEY` with YouTube Data API v3 enabled, using its free quota. Keep it and `SUPABASE_SERVICE_ROLE_KEY` out of client/Vite variables. Existing Supabase client/server configuration is still required. No OpenAI key is needed or used, even if one remains in the environment. Query generation is deterministic, not AI semantic analysis: it combines the saved specific request with subject, level and goal. The legacy optional `focus` API parameter remains compatible for older callers; saved request text takes priority.
+
+YouTube has an 8-second timeout. Process-local safeguards coalesce identical searches, cache successes for 10 minutes (maximum 100 entries), cache failures for 30 seconds, limit new searches to 10 per user per minute, and cap concurrent upstream requests at 20. No automatic retries. These safeguards reset on restart and are per instance, not a distributed quota guarantee; keep the Google project quota capped. Missing credentials, exhausted quota, empty results and failures show inline notices without blocking the library.
+
+`buildYouTubeQuery` is the replacement point for a future free/open-source query interpreter. `DiscoveryItem` / `ExternalResource` and provider adapters keep source, format, attribution and review status separate from curated save capabilities. Future sources can use the same card/filter pipeline; no additional providers or AI ranking are implemented here. Curated ranking is unchanged.
+
+Mock-only checks (no credentials or external requests):
+
+```sh
+npm run test:unit -w server
+npm test -w client
+npm run build
+```
+
+The full `npm test` server suite still requires local Supabase with all migrations applied. Live provider and database checks should be performed before release. Mocked desktop/mobile browser checks run with `npx playwright install chromium` followed by `npm run test:e2e -w client`; screenshots are written to ignored `client/test-results/`.
 
 ## How it works
 

@@ -39,6 +39,8 @@ export type Level = keyof typeof levels
 export type Medium = keyof typeof media
 export type Goal = keyof typeof goals
 
+export const learningRequestMaxLength = 500
+
 export const levelOrder: Level[] = ['beginner', 'intermediate', 'advanced']
 
 export const isSubject = (v: unknown): v is Subject => typeof v === 'string' && v in subjects

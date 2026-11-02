@@ -2,10 +2,12 @@ import { Router } from 'express'
 import { currentUser, requireUser } from '../lib/auth.js'
 import { badRequest, HttpError, maybe } from '../lib/http.js'
 import { db } from '../lib/supabase.js'
-import { searchYouTube } from '../lib/youtube.js'
+import { buildYouTubeQuery, searchYouTube, type VideoResults } from '../lib/youtube.js'
+import { createDiscoveryCache } from '../lib/discoveryCache.js'
 import type { Answers } from '../lib/recommend.js'
 
 export const youtubeRouter = Router()
+const cachedSearch = createDiscoveryCache<VideoResults>()
 youtubeRouter.use('/youtube/recommendations', requireUser)
 
 // Optional live YouTube discovery. Unlike curated resources, results are not yet review-approved.
@@ -25,11 +27,12 @@ youtubeRouter.get('/youtube/recommendations', async (req, res) => {
 
   const youtubeKey = process.env.YOUTUBE_API_KEY
   if (!youtubeKey) throw new HttpError(503, 'Live YouTube search is not configured yet.', 'youtube_not_configured')
-  const answers: Answers = { topic: response.topic, level: response.knowledge_level, media: response.preferred_media ?? [], goal: response.goal }
+  const answers: Answers = { topic: response.topic, level: response.knowledge_level, media: response.preferred_media ?? [], goal: response.goal, learningRequest: response.learning_request ?? null }
   try {
-    const results = await searchYouTube(answers, focus.trim(), youtubeKey, process.env.OPENAI_API_KEY)
+    const results = await cachedSearch(user.id, JSON.stringify([youtubeKey, buildYouTubeQuery(answers, focus.trim())]), () => searchYouTube(answers, focus.trim(), youtubeKey))
     res.json(results)
-  } catch {
+  } catch (err) {
+    if (err instanceof HttpError) throw err
     throw new HttpError(502, 'YouTube search is temporarily unavailable.', 'youtube_unavailable')
   }
 })

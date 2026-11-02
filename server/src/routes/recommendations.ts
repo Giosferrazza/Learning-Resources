@@ -1,5 +1,5 @@
 import { Router } from 'express'
-import { isGoal, isLevel, isMedium, isSubject } from '../../../shared/vocabulary.js'
+import { isGoal, isLevel, isMedium, isSubject, learningRequestMaxLength } from '../../../shared/vocabulary.js'
 import { currentUser, requireUser } from '../lib/auth.js'
 import { badRequest, check, HttpError, notFound, text, maybe } from '../lib/http.js'
 import { track } from '../lib/events.js'
@@ -14,7 +14,9 @@ const RESOURCE_SUMMARY = 'id, title, description, url, file_path, subject, level
 // S1-07-T02 / S1-33-T02 Store questionnaire answers (students and professors, S1-11-T01)
 recommendationsRouter.post('/questionnaire', async (req, res) => {
   const user = currentUser(req)
-  const { topic, level, media, goal } = req.body ?? {}
+  const { topic, level, media, goal, learningRequest } = req.body ?? {}
+  if (learningRequest != null && typeof learningRequest !== 'string') throw badRequest('Learning request must be text.')
+  const requestText = text(learningRequest, 'Learning request', { max: learningRequestMaxLength, required: false })
   if (!isSubject(topic)) throw badRequest('Choose a subject.')
   if (!isLevel(level)) throw badRequest('Choose your knowledge level.')
   if (!Array.isArray(media) || !media.every(isMedium)) throw badRequest('Choose formats from the list.')
@@ -23,7 +25,7 @@ recommendationsRouter.post('/questionnaire', async (req, res) => {
   const row = check(
     await db
       .from('questionnaire_responses')
-      .insert({ user_id: user.id, topic, knowledge_level: level, preferred_media: [...new Set(media)], goal: goal || null })
+      .insert({ user_id: user.id, topic, knowledge_level: level, preferred_media: [...new Set(media)], goal: goal || null, learning_request: requestText || null })
       .select('id')
       .single(),
   )
@@ -47,7 +49,7 @@ recommendationsRouter.get('/recommendations', async (req, res) => {
   const response = maybe(await query.maybeSingle())
   if (!response) throw new HttpError(404, 'Answer the questionnaire first.', 'no_questionnaire')
 
-  const answers = { topic: response.topic, level: response.knowledge_level, media: response.preferred_media ?? [], goal: response.goal }
+  const answers = { topic: response.topic, level: response.knowledge_level, media: response.preferred_media ?? [], goal: response.goal, learningRequest: response.learning_request ?? null }
   // S1-21-T03 / S1-25-T03: only published resources are ever eligible
   const resources = check(await db.from('resources').select(RESOURCE_SUMMARY).eq('status', 'published'))
   const result = recommend(answers, resources)

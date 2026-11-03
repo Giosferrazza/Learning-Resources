@@ -6,8 +6,10 @@ import { youtubeRouter } from './youtube.js'
 
 const mocks = vi.hoisted(() => ({ getUser: vi.fn(), from: vi.fn(), search: vi.fn() }))
 vi.mock('../lib/supabase.js', () => ({ db: { auth: { getUser: mocks.getUser }, from: mocks.from } }))
-vi.mock('../lib/youtube.js', () => ({ searchYouTube: mocks.search }))
+// Unique keys isolate route tests; the actual cache/query builders have their own tests.
+vi.mock('../lib/youtube.js', () => ({ searchYouTube: mocks.search, buildYouTubeQuery: () => String(++queryNumber) }))
 
+let queryNumber = 0
 const ownedId = '11111111-1111-4111-8111-111111111111'
 const otherId = '22222222-2222-4222-8222-222222222222'
 const rows = [
@@ -88,7 +90,7 @@ describe('YouTube recommendations access and validation', () => {
   it('searches the owned questionnaire and trims focus', async () => {
     const result = await get(`?responseId=${ownedId}&focus=%20loops%20`)
     expect(result.status).toBe(200)
-    expect(mocks.search).toHaveBeenCalledWith({ topic: 'python', level: 'beginner', media: ['video'], goal: 'exam' }, 'loops', 'server-yt-key', '')
+    expect(mocks.search).toHaveBeenCalledWith({ topic: 'python', level: 'beginner', media: ['video'], goal: 'exam', learningRequest: null }, 'loops', 'server-yt-key')
     expect(result.body).toEqual({ query: 'Python tutorial', querySource: 'rules', videos: [] })
   })
 
@@ -97,6 +99,16 @@ describe('YouTube recommendations access and validation', () => {
     expect(filters).toEqual({ user_id: 'student' })
     expect(order).toHaveBeenCalledWith('created_at', { ascending: false })
     expect(limit).toHaveBeenCalledWith(1)
+  })
+
+  it('passes the saved learning request into discovery automatically', async () => {
+    Object.assign(rows[0], { learning_request: 'for loops and while loops' })
+    try {
+      expect((await get(`?responseId=${ownedId}`)).status).toBe(200)
+      expect(mocks.search).toHaveBeenCalledWith(expect.objectContaining({ learningRequest: 'for loops and while loops' }), '', 'server-yt-key')
+    } finally {
+      Reflect.deleteProperty(rows[0], 'learning_request')
+    }
   })
 
   it('returns a clear configuration error without a YouTube key', async () => {

@@ -1,18 +1,18 @@
 import { useEffect, useState, type FormEvent } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { goals, levels, media, subjects } from '../../../shared/vocabulary'
+import { goals, levels, media, subjects, learningRequestMaxLength } from '../../../shared/vocabulary'
 import { useAuth } from '../auth/AuthProvider'
-import { Alert, Button, Card, Checkboxes, Loading, Page, Select } from '../components/ui'
+import { Alert, Button, Card, Checkboxes, Loading, Page, Select, TextArea } from '../components/ui'
 import { api, errorMessage } from '../lib/api'
 
-type Latest = { response: { topic: string; knowledge_level: string; preferred_media: string[]; goal: string | null } | null }
+type Latest = { response: { topic: string; knowledge_level: string; preferred_media: string[]; goal: string | null; learning_request?: string | null } | null }
 
 // S1-07 questionnaire (+ S1-33 goal). Professors use it to plan lessons (S1-11-T02 wording).
 export default function QuestionnairePage() {
   const { profile } = useAuth()
   const navigate = useNavigate()
   const professor = profile?.role === 'professor'
-  const [form, setForm] = useState({ topic: '', level: '', media: [] as string[], goal: '' })
+  const [form, setForm] = useState({ topic: '', level: '', media: [] as string[], goal: '', learningRequest: '' })
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [error, setError] = useState('')
   const [busy, setBusy] = useState(false)
@@ -21,15 +21,17 @@ export default function QuestionnairePage() {
   // Start from the previous answers so changing one thing is quick
   useEffect(() => {
     api<Latest>('/questionnaire/latest')
-      .then(({ response }) => response && setForm({ topic: response.topic, level: response.knowledge_level, media: response.preferred_media, goal: response.goal ?? '' }))
+      .then(({ response }) => response && setForm({ topic: response.topic, level: response.knowledge_level, media: response.preferred_media, goal: response.goal ?? '', learningRequest: response.learning_request ?? '' }))
       .catch(() => {})
       .finally(() => setLoading(false))
   }, [])
 
   async function submit(e: FormEvent) {
     e.preventDefault()
+    if (busy) return
     const next: Record<string, string> = {}
     if (!form.topic) next.topic = 'Choose a subject.'
+    if (form.learningRequest.length > learningRequestMaxLength) next.learningRequest = `Use ${learningRequestMaxLength} characters or fewer.`
     if (!form.level) next.level = professor ? 'Choose the level you are teaching.' : 'Choose your knowledge level.'
     setErrors(next)
     if (Object.keys(next).length) return
@@ -66,6 +68,7 @@ export default function QuestionnairePage() {
           />
           <Checkboxes label="Formats (pick any, or none for all)" options={media} value={form.media} onChange={(v) => setForm({ ...form, media: v })} />
           <Select label={professor ? 'Your students’ goal' : 'Your goal'} options={goals} placeholder="No particular goal" value={form.goal} onChange={(e) => setForm({ ...form, goal: e.target.value })} />
+          <TextArea label="What specifically do you want to learn?" hint={`Optional · ${form.learningRequest.length}/${learningRequestMaxLength} characters. Used to search YouTube; avoid personal information.`} placeholder="I'm learning Python and want to understand for loops and while loops with beginner-friendly examples." maxLength={learningRequestMaxLength} value={form.learningRequest} onChange={(e) => setForm({ ...form, learningRequest: e.target.value })} error={errors.learningRequest} />
           <Button type="submit" busy={busy} className="w-full">
             {professor ? 'Find resources for my class' : 'Get my recommendations'}
           </Button>

@@ -8,6 +8,7 @@
     "start": "tsx src/index.ts",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
+    "test:unit": "vitest run src/lib src/routes",
     "seed": "tsx scripts/seed.ts"
   },
   "dependencies": {

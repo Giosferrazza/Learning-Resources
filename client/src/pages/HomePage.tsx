@@ -1,5 +1,7 @@
 import type { ReactNode } from 'react'
 import { Link } from 'react-router-dom'
+import { useAuth } from '../auth/AuthProvider'
+import { roleHome } from '../lib/roles'
 
 // Landing page, ported from David's Bootstrap mockup (index_standalone.html).
 // His sign-in/sign-up/questionnaire modals are the /login, /register and /questionnaire pages here.
@@ -61,6 +63,8 @@ const roadmap = [
 ]
 
 export default function HomePage() {
+  // Signed-in people can come back here from the logo, so swap sign-up calls to action for their own page
+  const { profile } = useAuth()
   return (
     <>
       <header className="bg-[radial-gradient(circle_at_80%_20%,rgba(31,181,168,0.25),transparent_45%),linear-gradient(135deg,var(--color-rl-navy-deep)_0%,var(--color-rl-navy)_100%)] text-white">
@@ -80,9 +84,15 @@ export default function HomePage() {
                 <i className="bi bi-clipboard2-check mr-2" />
                 Take the Questionnaire
               </Link>
-              <Link to="/register" className={outlineLightBtn}>
-                Create a Free Account
-              </Link>
+              {profile ? (
+                <Link to={roleHome[profile.role]} className={outlineLightBtn}>
+                  Go to my dashboard
+                </Link>
+              ) : (
+                <Link to="/register" className={outlineLightBtn}>
+                  Create a Free Account
+                </Link>
+              )}
             </div>
           </div>
 
@@ -145,9 +155,11 @@ export default function HomePage() {
                 Found a video that finally made the concept click? Heart it. Your saved resources stay tied to your account so you can return to
                 them later, and you can un-favorite anything at any time.
               </p>
-              <Link to="/register" className={primaryBtn}>
-                Create an Account to Save Favorites
-              </Link>
+              {!profile && (
+                <Link to="/register" className={primaryBtn}>
+                  Create an Account to Save Favorites
+                </Link>
+              )}
             </div>
             {/* Sample card showing the look of a saved resource; real data comes with S1-36 */}
             <Card>

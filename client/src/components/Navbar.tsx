@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { Link, NavLink, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../auth/AuthProvider'
 import { api } from '../lib/api'
-import { roleHome, roleLabel, roleNav } from '../lib/roles'
+import { roleLabel, roleNav } from '../lib/roles'
 
 // Contextual navigation: signed-out visitors only see sign in / sign up; signed-in people see
 // the links for their role (S1-11-T02) plus an account menu. Password reset lives on the
@@ -20,7 +20,7 @@ export default function Navbar() {
   return (
     <nav className="sticky top-0 z-20 bg-rl-navy shadow-[0_2px_10px_rgba(0,0,0,0.25)]">
       <div className="mx-auto flex max-w-6xl items-center gap-4 px-4 py-3">
-        <Link to={profile ? roleHome[profile.role] : '/'} className="mr-auto text-lg font-bold whitespace-nowrap text-white">
+        <Link to="/" aria-label="Resource Learning home" className="mr-auto text-lg font-bold whitespace-nowrap text-white">
           <i className="bi bi-mortarboard-fill mr-1" />
           Resource <span className="text-rl-teal">Learning</span>
         </Link>

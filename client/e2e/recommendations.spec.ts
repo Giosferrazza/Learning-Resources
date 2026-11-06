@@ -14,7 +14,7 @@ test('questionnaire to unified results fits the viewport', async ({ page }, test
     else if (path === '/api/questionnaire/latest') json = { response: null }
     else if (path === '/api/questionnaire') { saved = route.request().postDataJSON(); json = { id: '11111111-1111-4111-8111-111111111111' } }
     else if (path === '/api/recommendations') json = { responseId: '11111111-1111-4111-8111-111111111111', answers: saved, exact: true, libraryEmpty: false, items: [{ resource: { id: 'curated', title: 'Python loops guide', description: 'A reviewed guide to iteration.', subject: 'python', level: 'beginner', medium: 'article' }, exact: true, reasons: ['Subject: Python'], gaps: [] }] }
-    else if (path === '/api/youtube/recommendations') { searches++; json = { query: 'Python loops Beginner tutorial', querySource: 'rules', videos: [{ id: 'aB3dE5fG7hI', title: 'Python for loops and while loops with beginner examples', channel: 'Example Teacher', description: 'Mock video for layout verification.', thumbnail: 'https://i.ytimg.com/vi/aB3dE5fG7hI/mqdefault.jpg', url: 'https://www.youtube.com/watch?v=aB3dE5fG7hI' }] } }
+    else if (path === '/api/discovery/recommendations') { searches++; json = { resources: [{ id: 'aB3dE5fG7hI', title: 'Python for loops and while loops with beginner examples', description: 'Mock video for layout verification.', url: 'https://www.youtube.com/watch?v=aB3dE5fG7hI', source: 'Example Teacher', type: 'tutorial', medium: 'video', free: true }] } }
     else json = { notifications: [] }
     await route.fulfill({ json })
   })

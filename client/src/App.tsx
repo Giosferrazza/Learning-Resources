@@ -1,12 +1,10 @@
 import { useEffect } from 'react'
-import { Navigate, Route, Routes, useLocation } from 'react-router-dom'
-import { useAuth } from './auth/AuthProvider'
+import { Route, Routes, useLocation } from 'react-router-dom'
 import Footer from './components/Footer'
 import Navbar from './components/Navbar'
 import { GuestOnly, RequireAuth } from './components/RequireAuth'
-import { Empty, LinkButton, Loading } from './components/ui'
+import { Empty, LinkButton } from './components/ui'
 import Walkthrough from './components/Walkthrough'
-import { roleHome } from './lib/roles'
 import AccountPage from './pages/AccountPage'
 import ChangePasswordPage from './pages/ChangePasswordPage'
 import FavoritesPage from './pages/FavoritesPage'
@@ -33,14 +31,6 @@ import AdminUsersPage from './pages/admin/AdminUsersPage'
 import MySubmissionsPage from './pages/educator/MySubmissionsPage'
 import NotificationsPage from './pages/educator/NotificationsPage'
 import ResourceFormPage from './pages/educator/ResourceFormPage'
-
-// Signed-in people skip the marketing page and land on their role's home
-function Landing() {
-  const { session, profile, loading } = useAuth()
-  if (loading) return <Loading />
-  if (session && profile) return <Navigate to={roleHome[profile.role]} replace />
-  return <HomePage />
-}
 
 function ScrollManager() {
   const { pathname, hash } = useLocation()
@@ -75,7 +65,7 @@ export default function App() {
       <main className="flex-1 pb-10">
         <Routes>
           {/* Public */}
-          <Route path="/" element={<Landing />} />
+          <Route path="/" element={<HomePage />} />
           <Route path="/login" element={guest(<LoginPage />)} />
           <Route path="/register" element={guest(<RegisterPage />)} />
           <Route path="/forgot-password" element={guest(<ForgotPasswordPage />)} />

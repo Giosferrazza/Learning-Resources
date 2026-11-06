@@ -16,7 +16,7 @@ export function createDiscoveryCache<T>(now = Date.now) {
     if (hit) return hit
     const budget = users.get(userId) ?? { until: time + 60_000, count: 0 }
     if (budget.count >= 10 || pending.size >= 20 || (!users.has(userId) && users.size >= 1000)) {
-      return Promise.reject(new HttpError(429, 'Video search is busy. Please try again shortly.', 'youtube_rate_limited'))
+      return Promise.reject(new HttpError(429, 'Resource search is busy. Please try again shortly.', 'discovery_rate_limited'))
     }
     budget.count++
     users.set(userId, budget)

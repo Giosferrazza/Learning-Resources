@@ -1,12 +1,12 @@
 import { useEffect, useState } from 'react'
 import { api, errorMessage } from './api'
-import type { YouTubeResults } from './discovery'
+import type { WebResults } from './discovery'
 
-const pending = new Map<string, Promise<YouTubeResults>>()
+const pending = new Map<string, Promise<WebResults>>()
 
 // Mounted under a questionnaire/user key. StrictMode remounts share one in-flight GET.
-export function useYouTube(userId: string, responseId: string) {
-  const [data, setData] = useState<YouTubeResults | null>(null)
+export function useDiscovery(userId: string, responseId: string) {
+  const [data, setData] = useState<WebResults | null>(null)
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(true)
   useEffect(() => {
@@ -14,7 +14,7 @@ export function useYouTube(userId: string, responseId: string) {
     const key = `${userId}:${responseId}`
     let request = pending.get(key)
     if (!request) {
-      request = api<YouTubeResults>(`/youtube/recommendations?responseId=${encodeURIComponent(responseId)}`)
+      request = api<WebResults>(`/discovery/recommendations?responseId=${encodeURIComponent(responseId)}`)
       pending.set(key, request)
       void request.then(() => pending.delete(key), () => pending.delete(key))
     }

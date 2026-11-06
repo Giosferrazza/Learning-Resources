@@ -41,6 +41,19 @@ export type Goal = keyof typeof goals
 
 export const learningRequestMaxLength = 500
 
+// Kinds of external resource that web discovery can return. Each one also carries a
+// medium from `media` above, so the format filter covers curated and discovered items alike.
+export const discoveryTypes = {
+  course: 'Course',
+  tutorial: 'Tutorial',
+  documentation: 'Documentation',
+  practice: 'Practice',
+  reference: 'Reference',
+  interactive: 'Interactive',
+  book: 'Book',
+} as const
+export type DiscoveryType = keyof typeof discoveryTypes
+
 export const levelOrder: Level[] = ['beginner', 'intermediate', 'advanced']
 
 export const isSubject = (v: unknown): v is Subject => typeof v === 'string' && v in subjects

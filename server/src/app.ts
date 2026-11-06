@@ -8,7 +8,7 @@ import { adminRouter } from './routes/admin.js'
 import { listsRouter } from './routes/lists.js'
 import { recommendationsRouter } from './routes/recommendations.js'
 import { resourcesRouter } from './routes/resources.js'
-import { youtubeRouter } from './routes/youtube.js'
+import { discoveryRouter } from './routes/discovery.js'
 
 // Built separately from index.ts so tests can import the app without listening.
 export function createApp() {
@@ -37,7 +37,7 @@ export function createApp() {
 
   app.use('/api', accountRouter)
   app.use('/api', recommendationsRouter)
-  app.use('/api', youtubeRouter)
+  app.use('/api', discoveryRouter)
   app.use('/api', listsRouter)
   app.use('/api', resourcesRouter)
   app.use('/api/admin', adminRouter)

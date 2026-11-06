@@ -1,3 +1,4 @@
+import { discoveryTypes, type DiscoveryType, type Medium } from '../../../shared/vocabulary'
 import type { Resource } from './types'
 
 export type CuratedMatch = { resource: Resource; exact: boolean; reasons: string[]; gaps: string[] }
@@ -9,16 +10,18 @@ export type ExternalResource = {
 export type DiscoveryItem =
   | { key: string; kind: 'curated'; medium: string | null; match: CuratedMatch }
   | { key: string; kind: 'external'; medium: string; resource: ExternalResource }
-export type YouTubeResults = {
-  query: string; querySource: 'rules'
-  videos: Array<{ id: string; title: string; channel: string; description: string; thumbnail: string | null; url: string }>
+export type WebResults = {
+  resources: Array<{ id: string; title: string; description: string; url: string; source: string; type: DiscoveryType; medium: Medium; free: boolean }>
 }
-export function discoveryItems(curated: CuratedMatch[], youtube?: YouTubeResults | null): DiscoveryItem[] {
+export function discoveryItems(curated: CuratedMatch[], web?: WebResults | null): DiscoveryItem[] {
   return [
     ...curated.map((match): DiscoveryItem => ({ key: `library:${match.resource.id}`, kind: 'curated', medium: match.resource.medium, match })),
-    ...(youtube?.videos ?? []).map((video): DiscoveryItem => ({
-      key: `youtube:${video.id}`, kind: 'external', medium: 'video',
-      resource: { ...video, medium: 'video', source: 'YouTube', attribution: video.channel },
+    ...(web?.resources ?? []).map((found): DiscoveryItem => ({
+      key: `web:${found.id}`, kind: 'external', medium: found.medium,
+      resource: {
+        id: found.id, title: found.title, description: found.description, url: found.url, medium: found.medium,
+        source: found.source, attribution: [discoveryTypes[found.type], found.free ? 'Free' : null].filter(Boolean).join(' · '), thumbnail: null,
+      },
     })),
   ]
 }

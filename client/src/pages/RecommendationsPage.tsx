@@ -9,7 +9,7 @@ import ResourceCard from '../components/ResourceCard'
 import { Alert, Button, Empty, LinkButton, Loading, LoadError, Page, Pill } from '../components/ui'
 import { api, ApiError, errorMessage } from '../lib/api'
 import { discoveryItems, type CuratedMatch } from '../lib/discovery'
-import { useYouTube } from '../lib/useYouTube'
+import { useDiscovery } from '../lib/useDiscovery'
 import { useApi } from '../lib/useApi'
 
 type Result = { responseId: string; answers: { topic: Subject; level: Level; media: Medium[]; goal: Goal | null; learningRequest?: string | null }; libraryEmpty: boolean; exact: boolean; items: CuratedMatch[] }
@@ -47,8 +47,8 @@ function Results({ data }: { data: Result }) {
   const { toggle } = useFavorites()
   const [formatFilter, setFormatFilter] = useState<string | null>(null)
   const [saved, setSaved] = useState<{ busy?: boolean; ok?: string; error?: string }>({})
-  const youtube = useYouTube(profile?.id ?? '', data.responseId)
-  const items = useMemo(() => discoveryItems(data.items, youtube.data), [data.items, youtube.data])
+  const web = useDiscovery(profile?.id ?? '', data.responseId)
+  const items = useMemo(() => discoveryItems(data.items, web.data), [data.items, web.data])
   const visible = items.filter((item) => !formatFilter || item.medium === formatFilter)
   const formats = [...new Set(items.map((item) => item.medium).filter(Boolean))] as Medium[]
   const { answers } = data
@@ -96,12 +96,12 @@ function Results({ data }: { data: Result }) {
         {saved.error && <Alert kind="error">{saved.error}</Alert>}
 
         {data.answers.learningRequest && <p className="break-words text-sm text-slate-600">Your learning request: {data.answers.learningRequest}</p>}
-        <p className="text-sm text-slate-600">Educator-approved library resources and external videos, together. Favorites and saved lists include library resources only.</p>
+        <p className="text-sm text-slate-600">Educator-approved library resources and resources found on the web, together. Favorites and saved lists include library resources only.</p>
         {data.items.length === 0 && <Alert kind="info">{data.libraryEmpty ? 'The educator library is empty right now.' : `No educator-approved resources in ${subjects[answers.topic]} match yet.`} External videos may still be available below.</Alert>}
         {data.items.length > 0 && !data.exact && <Alert kind="info">No library resources match all your answers; showing the closest matches.</Alert>}
-        {youtube.loading && <p role="status" className="text-sm text-slate-500">Finding YouTube videos… You can browse library resources while we search.</p>}
-        {youtube.error && <Alert kind="info">{youtube.error} Your library recommendations are still available.</Alert>}
-        {youtube.data && youtube.data.videos.length === 0 && <Alert kind="info">No YouTube videos found for these answers. You can refine your learning request using Change answers.</Alert>}
+        {web.loading && <p role="status" className="text-sm text-slate-500">Searching the web for more resources… You can browse library resources while we search.</p>}
+        {web.error && <Alert kind="info">{web.error} Your library recommendations are still available.</Alert>}
+        {web.data && web.data.resources.length === 0 && <Alert kind="info">No web resources found for these answers. You can refine your learning request using Change answers.</Alert>}
         {formats.length > 1 && (
           <div className="flex flex-wrap items-center gap-2 text-sm">
             <span className="text-slate-500">Filter:</span>

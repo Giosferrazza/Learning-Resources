@@ -15,7 +15,7 @@ vi.mock('../components/FavoriteButton', () => ({ default: ({ resourceId }: { res
 vi.mock('../components/AddToList', () => ({ default: ({ resourceId }: { resourceId: string }) => <button>Add {resourceId}</button> }))
 const result = (id = 'a') => ({ responseId: id, answers: { topic: 'python', level: 'beginner', media: [], goal: null }, exact: true, libraryEmpty: false,
   items: [{ resource: { id: 'curated', title: `Guide ${id}`, medium: 'article' }, exact: true, reasons: ['Subject: Python'], gaps: [] }] })
-const videos = (title = 'Loop video') => ({ query: 'Python loops', querySource: 'rules', videos: [{ id: 'video', title, channel: 'Teacher', description: '', url: 'https://www.youtube.com/watch?v=aB3dE5fG7hI', thumbnail: 'https://i.ytimg.com/example.jpg' }] })
+const videos = (title = 'Loop video') => ({ resources: [{ id: 'video', title, description: '', url: 'https://www.youtube.com/watch?v=aB3dE5fG7hI', source: 'Teacher', type: 'tutorial', medium: 'video', free: true }] })
 function Navigation() {
   const navigate = useNavigate()
   return <><button onClick={() => navigate('/recommendations?responseId=b')}>Switch questionnaire</button><RecommendationsPage /></>
@@ -26,15 +26,15 @@ afterEach(cleanup)
 
 describe('unified recommendations', () => {
   it('automatically loads videos once, distinguishes sources and filters both formats', async () => {
-    mocks.api.mockImplementation(async (path: string) => path.startsWith('/youtube') ? videos() : result())
+    mocks.api.mockImplementation(async (path: string) => path.startsWith('/discovery') ? videos() : result())
     mount()
     expect(await screen.findByText('Loop video')).toBeTruthy()
     expect(screen.getByText('Guide a')).toBeTruthy()
     expect(screen.getByText(/Not educator-reviewed/)).toBeTruthy()
     expect(screen.getByText(/Learning Resources.*Educator-approved/)).toBeTruthy()
-    expect(screen.getByText('Teacher')).toBeTruthy()
-    expect(screen.queryByText('Find YouTube videos')).toBeNull()
-    expect(mocks.api.mock.calls.filter(([path]) => path.startsWith('/youtube'))).toHaveLength(1)
+    expect(screen.getByText('Tutorial · Free')).toBeTruthy()
+    expect(screen.queryByText('Find web resources')).toBeNull()
+    expect(mocks.api.mock.calls.filter(([path]) => path.startsWith('/discovery'))).toHaveLength(1)
     fireEvent.click(screen.getByRole('button', { name: 'Video' }))
     expect(screen.queryByText('Guide a')).toBeNull()
     fireEvent.click(screen.getByRole('button', { name: 'Article' }))
@@ -42,17 +42,17 @@ describe('unified recommendations', () => {
   })
   it('keeps curated resources available while video search is pending and when it fails', async () => {
     let reject!: (error: Error) => void
-    mocks.api.mockImplementation((path: string) => path.startsWith('/youtube') ? new Promise((_resolve, no) => { reject = no }) : Promise.resolve(result()))
+    mocks.api.mockImplementation((path: string) => path.startsWith('/discovery') ? new Promise((_resolve, no) => { reject = no }) : Promise.resolve(result()))
     mount()
     expect(await screen.findByText('Guide a')).toBeTruthy()
-    expect(screen.getByText(/Finding YouTube videos/)).toBeTruthy()
-    await act(async () => reject(new Error('YouTube is unavailable')))
+    expect(screen.getByText(/Searching the web/)).toBeTruthy()
+    await act(async () => reject(new Error('Search is unavailable')))
     expect(await screen.findByText(/Your library recommendations are still available/)).toBeTruthy()
     expect(screen.getByText('Guide a')).toBeTruthy()
   })
   it('ignores a late video response after switching questionnaires', async () => {
     let finishOld!: (value: unknown) => void
-    mocks.api.mockImplementation((path: string) => path.startsWith('/youtube')
+    mocks.api.mockImplementation((path: string) => path.startsWith('/discovery')
       ? path.endsWith('=a') ? new Promise((resolve) => { finishOld = resolve }) : Promise.resolve(videos('New video'))
       : Promise.resolve(result(path.endsWith('=b') ? 'b' : 'a')))
     mount()
@@ -66,18 +66,18 @@ describe('unified recommendations', () => {
   })
   it('ignores a late curated response after switching questionnaires', async () => {
     let finishOld!: (value: unknown) => void
-    mocks.api.mockImplementation((path: string) => path.startsWith('/youtube') ? Promise.resolve(videos())
+    mocks.api.mockImplementation((path: string) => path.startsWith('/discovery') ? Promise.resolve(videos())
       : path.endsWith('=a') ? new Promise((resolve) => { finishOld = resolve }) : Promise.resolve(result('b')))
     mount()
     fireEvent.click(screen.getByText('Switch questionnaire'))
     await screen.findByText('Guide b')
     await act(async () => finishOld(result('a')))
     expect(screen.queryByText('Guide a')).toBeNull()
-    expect(mocks.api.mock.calls.filter(([path]) => path === '/youtube/recommendations?responseId=a')).toHaveLength(0)
+    expect(mocks.api.mock.calls.filter(([path]) => path === '/discovery/recommendations?responseId=a')).toHaveLength(0)
   })
   it('preserves professor actions and saves only curated IDs', async () => {
     mocks.role = 'professor'
-    mocks.api.mockImplementation(async (path: string) => path === '/lists' ? { list: { id: 'list', name: 'Saved' } } : path.startsWith('/youtube') ? videos() : result())
+    mocks.api.mockImplementation(async (path: string) => path === '/lists' ? { list: { id: 'list', name: 'Saved' } } : path.startsWith('/discovery') ? videos() : result())
     mount()
     await screen.findByText('Loop video')
     expect(screen.getByText('Add curated')).toBeTruthy()

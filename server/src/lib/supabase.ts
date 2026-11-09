@@ -1,7 +1,7 @@
 import 'dotenv/config'
 import { createClient } from '@supabase/supabase-js'
 
-const url = process.env.SUPABASE_URL ?? 'http://127.0.0.1:54321'
+const url = process.env.SUPABASE_URL ?? 'http://127.0.0.1:54331'
 const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY ?? 'missing-service-role-key'
 const options = { auth: { persistSession: false, autoRefreshToken: false } }
 

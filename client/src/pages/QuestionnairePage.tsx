@@ -19,11 +19,16 @@ export default function QuestionnairePage() {
   const [loading, setLoading] = useState(true)
 
   // Start from the previous answers so changing one thing is quick
+  // (ignore a response that arrives after unmount so it can't overwrite answers being edited)
   useEffect(() => {
+    let active = true
     api<Latest>('/questionnaire/latest')
-      .then(({ response }) => response && setForm({ topic: response.topic, level: response.knowledge_level, media: response.preferred_media, goal: response.goal ?? '', learningRequest: response.learning_request ?? '' }))
+      .then(({ response }) => active && response && setForm({ topic: response.topic, level: response.knowledge_level, media: response.preferred_media, goal: response.goal ?? '', learningRequest: response.learning_request ?? '' }))
       .catch(() => {})
-      .finally(() => setLoading(false))
+      .finally(() => active && setLoading(false))
+    return () => {
+      active = false
+    }
   }, [])
 
   async function submit(e: FormEvent) {
@@ -68,7 +73,7 @@ export default function QuestionnairePage() {
           />
           <Checkboxes label="Formats (pick any, or none for all)" options={media} value={form.media} onChange={(v) => setForm({ ...form, media: v })} />
           <Select label={professor ? 'Your students’ goal' : 'Your goal'} options={goals} placeholder="No particular goal" value={form.goal} onChange={(e) => setForm({ ...form, goal: e.target.value })} />
-          <TextArea label="What specifically do you want to learn?" hint={`Optional · ${form.learningRequest.length}/${learningRequestMaxLength} characters. Used to search YouTube; avoid personal information.`} placeholder="I'm learning Python and want to understand for loops and while loops with beginner-friendly examples." maxLength={learningRequestMaxLength} value={form.learningRequest} onChange={(e) => setForm({ ...form, learningRequest: e.target.value })} error={errors.learningRequest} />
+          <TextArea label="What specifically do you want to learn?" hint={`Optional · ${form.learningRequest.length}/${learningRequestMaxLength} characters. Used to search the web for extra resources; avoid personal information.`} placeholder="I'm learning Python and want to understand for loops and while loops with beginner-friendly examples." maxLength={learningRequestMaxLength} value={form.learningRequest} onChange={(e) => setForm({ ...form, learningRequest: e.target.value })} error={errors.learningRequest} />
           <Button type="submit" busy={busy} className="w-full">
             {professor ? 'Find resources for my class' : 'Get my recommendations'}
           </Button>

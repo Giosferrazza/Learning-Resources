@@ -87,9 +87,10 @@ export default function ResourceFormPage() {
     const body = { ...form, submit }
     try {
       const { resource: saved } = await api<{ resource: Resource }>(id ? `/resources/${id}` : '/resources', { method: id ? 'PATCH' : 'POST', body })
+      // /resources/new and /resources/:id/edit share this component instance, so set the result before moving
+      setState({ ok: saved.status === 'pending' ? 'Saved and sent for review.' : 'Draft saved.' })
       if (!id) return navigate(`/resources/${saved.id}/edit`, { replace: true, state: { created: true } })
       existing.setData({ resource: saved })
-      setState({ ok: saved.status === 'pending' ? 'Saved and sent for review.' : 'Draft saved.' })
     } catch (err) {
       setState({ error: errorMessage(err) })
     }

@@ -18,7 +18,7 @@ npm test             # server tests (needs local Supabase running)
 
 Copy `client/.env.example` to `client/.env.local` and `server/.env.example` to `server/.env`, then fill them from `npx supabase status`:
 
-- `VITE_SUPABASE_URL` / `SUPABASE_URL`: `API_URL` (http://127.0.0.1:54321)
+- `VITE_SUPABASE_URL` / `SUPABASE_URL`: `API_URL` (http://127.0.0.1:54331)
 - `VITE_SUPABASE_ANON_KEY`: `ANON_KEY`
 - `SUPABASE_SERVICE_ROLE_KEY`: `SERVICE_ROLE_KEY` (server only, never in the client)
 

@@ -34,3 +34,12 @@ export function text(value: unknown, field: string, { max = 500, required = true
   if (v.length > max) throw badRequest(`${field} must be ${max} characters or fewer.`)
   return v
 }
+
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+export const isUuid = (v: unknown): v is string => typeof v === 'string' && UUID.test(v)
+
+// Malformed IDs are just "not found", not a database error
+export function uuidParam(value: unknown, what = 'That'): string {
+  if (!isUuid(value)) throw notFound(what)
+  return value
+}

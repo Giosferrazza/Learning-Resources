@@ -1,5 +1,5 @@
 import { useState, type ButtonHTMLAttributes, type InputHTMLAttributes, type ReactNode, type SelectHTMLAttributes, type TextareaHTMLAttributes } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, NavLink } from 'react-router-dom'
 import { levels, media, subjects } from '../../../shared/vocabulary'
 
 // Shared building blocks in David's Resource Learning style.
@@ -135,12 +135,39 @@ export function Card({ children, className = '' }: { children: ReactNode; classN
   return <div className={`rounded-xl border border-slate-200 bg-white p-5 shadow-sm ${className}`}>{children}</div>
 }
 
-export function Page({ title, subtitle, actions, children, narrow }: { title: string; subtitle?: ReactNode; actions?: ReactNode; children: ReactNode; narrow?: boolean }) {
+// S2-01-T03 Where am I: every page below a section shows its trail. The last crumb is the page itself.
+export type Crumb = { label: string; to?: string }
+export function Breadcrumbs({ items }: { items: Crumb[] }) {
   return (
-    <div className={`mx-auto px-4 py-8 ${narrow ? 'max-w-md' : 'max-w-5xl'}`}>
+    <nav aria-label="Breadcrumb" className="mb-2 text-sm text-slate-500">
+      <ol className="flex flex-wrap items-center gap-1">
+        {items.map((c, i) => (
+          <li key={`${c.label}-${i}`} className="flex min-w-0 items-center gap-1">
+            {i > 0 && <i className="bi bi-chevron-right text-xs text-slate-400" aria-hidden />}
+            {c.to && i < items.length - 1 ? (
+              <Link to={c.to} className="hover:text-rl-teal-dark hover:underline">
+                {c.label}
+              </Link>
+            ) : (
+              <span aria-current={i === items.length - 1 ? 'page' : undefined} className="truncate font-medium text-slate-700">
+                {c.label}
+              </span>
+            )}
+          </li>
+        ))}
+      </ol>
+    </nav>
+  )
+}
+
+// S2-01-T02 Every page uses this frame: optional trail, title, subtitle, actions on the right.
+export function Page({ title, subtitle, actions, children, narrow, wide, breadcrumbs }: { title: string; subtitle?: ReactNode; actions?: ReactNode; children: ReactNode; narrow?: boolean; wide?: boolean; breadcrumbs?: Crumb[] }) {
+  return (
+    <div className={`mx-auto px-4 py-6 sm:py-8 ${narrow ? 'max-w-md' : wide ? 'max-w-6xl' : 'max-w-5xl'}`}>
+      {breadcrumbs && <Breadcrumbs items={breadcrumbs} />}
       <div className="mb-6 flex flex-wrap items-end justify-between gap-3">
-        <div>
-          <h1 className="text-2xl font-bold">{title}</h1>
+        <div className="min-w-0">
+          <h1 className="text-2xl font-bold break-words">{title}</h1>
           {subtitle && <p className="mt-1 text-slate-600">{subtitle}</p>}
         </div>
         {actions && <div className="flex flex-wrap gap-2">{actions}</div>}
@@ -163,12 +190,29 @@ export function Loading({ label = 'Loading…' }: { label?: string }) {
   )
 }
 
+// S2-01-T02-S3 Standard empty state: icon, what's missing, and what to do next
 export function Empty({ icon = 'inbox', title, children }: { icon?: string; title: string; children?: ReactNode }) {
   return (
     <div className="rounded-xl border border-dashed border-slate-300 bg-white px-6 py-12 text-center">
-      <i className={`bi bi-${icon} text-3xl text-slate-400`} />
+      <i className={`bi bi-${icon} text-3xl text-slate-400`} aria-hidden />
       <p className="mt-3 font-semibold">{title}</p>
       {children && <div className="mt-2 text-sm text-slate-600">{children}</div>}
+    </div>
+  )
+}
+
+// S2-01-T02-S3 Standard error state for a whole page or section that failed to load
+export function ErrorState({ error, retry, title = 'We couldn’t load this' }: { error: Error; retry?: () => void; title?: string }) {
+  return (
+    <div role="alert" className="rounded-xl border border-red-200 bg-red-50 px-6 py-10 text-center">
+      <i className="bi bi-exclamation-triangle text-3xl text-red-400" aria-hidden />
+      <p className="mt-3 font-semibold text-red-900">{title}</p>
+      <p className="mt-1 text-sm text-red-800">{error.message}</p>
+      {retry && (
+        <Button variant="secondary" className="mt-4" onClick={retry}>
+          <i className="bi bi-arrow-clockwise" /> Try again
+        </Button>
+      )}
     </div>
   )
 }
@@ -219,3 +263,57 @@ export function StatusPill({ status }: { status: keyof typeof statusTone }) {
 
 export const formatDate = (iso: string) => new Date(iso).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })
 export const formatDateTime = (iso: string) => new Date(iso).toLocaleString(undefined, { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })
+
+// S2-10-T03 Average rating, shown the same way on cards and detail pages
+export function Stars({ rating, compact }: { rating?: { average: number | null; count: number } | null; compact?: boolean }) {
+  if (!rating || !rating.count || rating.average === null) return compact ? null : <span className="text-sm text-slate-500">No ratings yet</span>
+  const label = `${rating.average.toFixed(1)} out of 5 from ${rating.count} rating${rating.count === 1 ? '' : 's'}`
+  return (
+    <span className="inline-flex items-center gap-1 text-sm text-slate-600" title={label}>
+      <i className="bi bi-star-fill text-rl-gold" aria-hidden />
+      <span className="sr-only">{label}</span>
+      <span aria-hidden>
+        {rating.average.toFixed(1)} {!compact && <span className="text-slate-500">({rating.count})</span>}
+      </span>
+    </span>
+  )
+}
+
+// S2-01-T02 Section side navigation (admin and educator insights). Becomes a scrolling tab row on phones.
+export function SideNav({ title, links }: { title: string; links: { to: string; label: string; icon: string }[] }) {
+  return (
+    <nav aria-label={title} className="md:w-52 md:shrink-0">
+      <p className="mb-2 hidden text-xs font-semibold tracking-wide text-slate-500 uppercase md:block">{title}</p>
+      <ul className="-mx-4 flex gap-1 overflow-x-auto px-4 pb-2 md:mx-0 md:flex-col md:overflow-visible md:px-0 md:pb-0">
+        {links.map((l) => (
+          <li key={l.to} className="shrink-0">
+            <NavLink
+              to={l.to}
+              end
+              className={({ isActive }) =>
+                `flex items-center gap-2 rounded-md px-3 py-2 text-sm whitespace-nowrap ${isActive ? 'bg-rl-teal/15 font-semibold text-rl-teal-dark' : 'text-slate-600 hover:bg-slate-100'}`
+              }
+            >
+              <i className={`bi bi-${l.icon}`} aria-hidden />
+              {l.label}
+            </NavLink>
+          </li>
+        ))}
+      </ul>
+    </nav>
+  )
+}
+
+export function WithSideNav({ nav, children }: { nav: ReactNode; children: ReactNode }) {
+  return (
+    <div className="mx-auto flex max-w-6xl flex-col gap-2 px-4 pt-6 md:flex-row md:gap-6 md:pt-8">
+      {nav}
+      <div className="min-w-0 flex-1 [&>div]:max-w-none [&>div]:px-0 [&>div]:pt-0">{children}</div>
+    </div>
+  )
+}
+
+// Tables scroll sideways on phones instead of pushing the page wider
+export function TableWrap({ children }: { children: ReactNode }) {
+  return <div className="-mx-4 overflow-x-auto px-4 sm:mx-0 sm:px-0">{children}</div>
+}

@@ -17,6 +17,14 @@ import { goals, levelOrder, levels, media, subjects, type Goal, type Level, type
 //
 // Ties (both lists, S1-33-T03): goal match first, then newest, then title A-Z.
 // Untagged level or format never earns points and is called out in the explanation.
+//
+// S2-13: the points above are the defaults. Admins can change the weights (and whether the
+// subject must match) in Admin > Recommendation rules; `rules` carries the stored values.
+// A level one step away earns half the level weight. When subject is not required, every
+// published resource is eligible and a matching subject earns the subject weight.
+
+export type Rules = { weights: { subject: number; level: number; medium: number; goal: number }; requireSubject: boolean }
+export const defaultRules: Rules = { weights: { subject: 3, level: 2, medium: 1, goal: 1 }, requireSubject: true }
 
 export type Answers = { topic: Subject; level: Level; media: Medium[]; goal: Goal | null; learningRequest?: string | null }
 
@@ -40,18 +48,28 @@ export type Recommendation<T extends Candidate> = {
 
 export type RecommendationResult<T extends Candidate> = { exact: boolean; items: Recommendation<T>[] }
 
-export function recommend<T extends Candidate>(answers: Answers, resources: T[], limit = 20): RecommendationResult<T> {
-  const scored = resources.filter((r) => r.subject === answers.topic).map((r) => score(answers, r))
+export function recommend<T extends Candidate>(answers: Answers, resources: T[], limit = 20, rules: Rules = defaultRules): RecommendationResult<T> {
+  const eligible = rules.requireSubject ? resources.filter((r) => r.subject === answers.topic) : resources
+  const scored = eligible.map((r) => score(answers, r, rules))
   const exact = scored.filter((s) => s.exact)
   const pool = exact.length ? exact : scored
   pool.sort(compare(answers))
   return { exact: exact.length > 0, items: pool.slice(0, limit) }
 }
 
-function score<T extends Candidate>(answers: Answers, r: T): Recommendation<T> {
-  const reasons = [`Subject: ${subjects[answers.topic]}`]
+function score<T extends Candidate>(answers: Answers, r: T, { weights, requireSubject }: Rules): Recommendation<T> {
+  const reasons: string[] = []
   const gaps: string[] = []
   let points = 0
+
+  const subjectMatch = r.subject === answers.topic
+  if (subjectMatch) {
+    reasons.push(`Subject: ${subjects[answers.topic]}`)
+    // With a required subject every candidate matches, so the weight would only shift all scores equally
+    if (!requireSubject) points += weights.subject
+  } else {
+    gaps.push(r.subject && r.subject in subjects ? `Subject: ${subjects[r.subject as Subject]}, not the one you picked` : 'Subject not tagged')
+  }
 
   const levelMatch = r.level === answers.level
   if (!r.level || !(r.level in levels)) {
@@ -60,10 +78,10 @@ function score<T extends Candidate>(answers: Answers, r: T): Recommendation<T> {
     const distance = Math.abs(levelOrder.indexOf(r.level as Level) - levelOrder.indexOf(answers.level))
     const label = levels[r.level as Level]
     if (distance === 0) {
-      points += 2
+      points += weights.level
       reasons.push(`Level: ${label}, your level`)
     } else if (distance === 1) {
-      points += 1
+      points += weights.level / 2
       gaps.push(`Level: ${label}, one step from yours`)
     } else {
       gaps.push(`Level: ${label}`)
@@ -76,18 +94,18 @@ function score<T extends Candidate>(answers: Answers, r: T): Recommendation<T> {
     gaps.push('Format not tagged')
   } else if (anyFormat || answers.media.includes(r.medium as Medium)) {
     mediumMatch = true
-    points += 1
+    points += weights.medium
     reasons.push(`Format: ${media[r.medium as Medium]}`)
   } else {
     gaps.push(`Format: ${media[r.medium as Medium]}, not one you picked`)
   }
 
   if (answers.goal && r.goals?.includes(answers.goal)) {
-    points += 1
+    points += weights.goal
     reasons.push(`Fits your goal: ${goals[answers.goal]}`)
   }
 
-  return { resource: r, exact: levelMatch && mediumMatch, score: points, reasons, gaps }
+  return { resource: r, exact: subjectMatch && levelMatch && mediumMatch, score: points, reasons, gaps }
 }
 
 const goalMatch = (answers: Answers, r: Candidate) => (answers.goal && r.goals?.includes(answers.goal) ? 1 : 0)
@@ -99,3 +117,10 @@ const compare =
     goalMatch(answers, b.resource) - goalMatch(answers, a.resource) ||
     b.resource.created_at.localeCompare(a.resource.created_at) ||
     a.resource.title.localeCompare(b.resource.title)
+
+// S2-15-T03 The student picked formats and nothing published in their subject comes in any of
+// them, so every result is a fallback in another format
+export function formatFallback(answers: Pick<Answers, 'topic' | 'media'>, published: Pick<Candidate, 'subject' | 'medium'>[]) {
+  const inSubject = published.filter((r) => r.subject === answers.topic)
+  return answers.media.length > 0 && inSubject.length > 0 && !inSubject.some((r) => r.medium && (answers.media as string[]).includes(r.medium))
+}

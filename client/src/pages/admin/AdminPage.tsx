@@ -7,7 +7,9 @@ type Monitoring = { current: { ok: boolean; responseMs: number }; last24h: { upt
 const sections = [
   { to: '/admin/submissions', icon: 'patch-check', label: 'Review submissions', body: 'Approve or reject educator uploads' },
   { to: '/admin/reports', icon: 'flag', label: 'Flagged content', body: 'Resolve reports from students' },
+  { to: '/admin/support', icon: 'life-preserver', label: 'Support requests', body: 'Answer questions and problems from users' },
   { to: '/admin/users', icon: 'people', label: 'Users and roles', body: 'Change roles, suspend accounts' },
+  { to: '/admin/rules', icon: 'sliders', label: 'Recommendation rules', body: 'Weights for subject, level, format and goal' },
   { to: '/admin/resources', icon: 'collection', label: 'Resource collection', body: 'Unpublish, restore or delete' },
   { to: '/admin/monitoring', icon: 'activity', label: 'Uptime and alerts', body: 'Health checks and outage alerts' },
   { to: '/admin/analytics', icon: 'graph-up', label: 'Usage analytics', body: 'Sign-ups and activity' },

@@ -72,6 +72,18 @@ npm run build
 
 The full `npm test` server suite still requires local Supabase with all migrations applied. Live provider and database checks should be performed before release. Mocked desktop/mobile browser checks run with `npx playwright install chromium` followed by `npm run test:e2e -w client`; screenshots are written to ignored `client/test-results/`.
 
+## Sprint 2
+
+Apply `supabase/migrations/0009_sprint2.sql` (locally `npx supabase migration up`). Integration tests for every S2 T04 task are in `server/src/sprint2.test.ts`. UI rules: `docs/style-guide.md`, audit: `docs/ui-audit.md`.
+
+- **Questionnaires (S2-04, S2-15, S2-16, S2-17):** `/questionnaires` lists every questionnaire, each with its own recommendations. Edit changes one questionnaire in place (`PATCH /api/questionnaire/:id`); Retake saves a new one prefilled. A snapshot of the recommendations is saved on every submit and edit (`questionnaire_snapshots`), shown at `/history`; resources removed since show as unavailable. When nothing in the subject comes in a picked format, results say so and show other formats.
+- **Filters and search (S2-03, S2-06):** `shared/filters.ts` defines subject, level and format filters for the API and pages; filter state lives in the URL. Library search matches title or description, published only, ranked title-start, title, description, then rating.
+- **Cards, details, ratings (S2-09, S2-10, S2-14):** cards show rating, "Open resource" and "Details". The detail page adds rating breakdown, recent comments (by role, never name), saves, approval date and how it fits your latest questionnaire.
+- **Lists (S2-07, S2-08):** export an owned list as CSV, Markdown or HTML from the list page (`GET /api/lists/:id/export?format=`). Uploaded files link to the app's resource page (set `APP_URL` in production).
+- **Notifications (S2-05):** approving a new resource notifies active students with a questionnaire in its subject, at its level or one away, in a format they picked. Approving an edit also notifies students who saved it. Rules in `server/src/lib/notify.ts`.
+- **Reports (S2-11, S2-12):** educators (and admins) get `/insights` (favorites by resource, subject, format; preferred formats) and `/insights/engagement` (views and opens per resource over 7/30/90 days, deduplicated per person per 30 minutes). Anonymous totals only.
+- **Admin (S2-02, S2-13):** `/support` takes requests from anyone; admins are notified and resolve them at `/admin/support`. `/admin/rules` edits recommendation weights and whether the subject must match; saved to `recommendation_settings` with a change history and used on the next request.
+
 ## How it works
 
 - **Auth (S1-01 to S1-05):** Supabase Auth in the browser; a database trigger creates the profile at sign-up. The API checks the access token and reloads the profile on every request, so role changes and suspensions apply immediately. Password reset emails land in Mailpit locally.

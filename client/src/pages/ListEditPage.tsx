@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { useAuth } from '../auth/AuthProvider'
+import ExportList from '../components/ExportList'
 import FavoriteButton from '../components/FavoriteButton'
 import { Alert, Button, Card, ConfirmButton, Empty, LinkButton, Loading, LoadError, Page, Tags } from '../components/ui'
 import { api, errorMessage } from '../lib/api'
@@ -20,7 +21,7 @@ export default function ListEditPage() {
   const [copied, setCopied] = useState(false)
 
   if (loading) return <Loading />
-  if (error || !data) return <Page title="List">{error && <LoadError error={error} retry={reload} />}</Page>
+  if (error || !data) return <Page title="List" breadcrumbs={[{ label: 'My lists', to: '/lists' }, { label: 'List' }]}>{error && <LoadError error={error} retry={reload} />}</Page>
   const list = data.list
   const shareUrl = list.share_token ? `${window.location.origin}/shared/${list.share_token}` : null
 
@@ -58,6 +59,7 @@ export default function ListEditPage() {
   return (
     <Page
       title={list.name}
+      breadcrumbs={[{ label: 'My lists', to: '/lists' }, { label: list.name }]}
       subtitle={`${list.items.length} resource${list.items.length === 1 ? '' : 's'}`}
       actions={
         <>
@@ -88,6 +90,8 @@ export default function ListEditPage() {
             </Button>
           </form>
         </Card>
+
+        <ExportList listId={list.id} listName={list.name} availableCount={list.items.filter((i) => i.resource.available).length} />
 
         {/* S1-15-T02 share control */}
         <Card>

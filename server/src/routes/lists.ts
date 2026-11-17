@@ -1,7 +1,9 @@
 import { randomUUID } from 'node:crypto'
 import { Router } from 'express'
 import { currentUser, requireUser } from '../lib/auth.js'
-import { badRequest, check, notFound, text, maybe } from '../lib/http.js'
+import { exportFormats, type ExportFormat } from '../../../shared/vocabulary.js'
+import { exportFilename, exportTypes, renderList } from '../lib/exportList.js'
+import { badRequest, check, HttpError, notFound, text, maybe, uuidParam, isUuid } from '../lib/http.js'
 import { track } from '../lib/events.js'
 import { db } from '../lib/supabase.js'
 
@@ -18,6 +20,8 @@ const present = (r: Summary | null, viewerId?: string) =>
     : { id: r?.id ?? null, title: r?.title ?? 'Removed resource', subject: null, level: null, medium: null, available: false }
 
 async function ownedList(listId: string, userId: string) {
+  // S2-07-T02-S3 Lists owned by someone else look exactly like missing ones
+  if (!isUuid(listId)) throw notFound('That list')
   const list = maybe(await db.from('lists').select('id, owner_id, name, share_token, created_at, updated_at').eq('id', listId).maybeSingle())
   if (!list || list.owner_id !== userId) throw notFound('That list')
   return list
@@ -133,6 +137,27 @@ listsRouter.delete('/lists/:id/items/:resourceId', async (req, res) => {
   await touch(req.params.id)
   const { count } = await db.from('list_items').select('resource_id', { count: 'exact', head: true }).eq('list_id', req.params.id)
   res.json({ ok: true, remaining: count ?? 0 })
+})
+
+// S2-08-T02 / S2-08-T03 Export an owned list as CSV, Markdown or HTML. Only resources that are
+// still published are included; an empty list is refused with a message instead of an empty file.
+listsRouter.get('/lists/:id/export', async (req, res) => {
+  const user = currentUser(req)
+  const list = await ownedList(uuidParam(req.params.id, 'That list'), user.id)
+  const format = req.query.format ?? 'csv'
+  if (typeof format !== 'string' || !(format in exportFormats)) throw badRequest('Choose CSV, Markdown or HTML.')
+  const items = check(await db.from('list_items').select('resource:resources(id, title, description, url, subject, level, medium, status)').eq('list_id', list.id).order('added_at'))
+  type Row = { id: string; title: string; description: string; url: string | null; subject: string | null; level: string | null; medium: string | null; status: string }
+  const live = items.map((i) => i.resource as unknown as Row | null).filter((r): r is Row => r?.status === 'published')
+  if (!live.length) throw new HttpError(400, 'This list has no available resources to export. Add some first.', 'empty_list')
+
+  // Uploaded files have no public link, so they point at the resource page in the app
+  const origin = (process.env.APP_URL || req.get('origin') || `${req.protocol}://${req.get('host')}`).replace(/\/$/, '')
+  const rows = live.map((r) => ({ title: r.title, description: r.description ?? '', medium: r.medium, level: r.level, subject: r.subject, link: r.url ?? `${origin}/resource/${r.id}` }))
+  const body = renderList(list.name, rows, format as ExportFormat)
+  res.setHeader('Content-Type', exportTypes[format as ExportFormat])
+  res.setHeader('Content-Disposition', `attachment; filename="${exportFilename(list.name, format as ExportFormat)}"`)
+  res.send(body)
 })
 
 // S1-15-T01 Read-only share links. Revoking makes old links stop working.

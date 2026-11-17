@@ -34,7 +34,7 @@ export async function cleanupUsers() {
   await Promise.all(created.splice(0).map((id) => db.auth.admin.deleteUser(id)))
 }
 
-type Method = 'get' | 'post' | 'patch' | 'delete'
+type Method = 'get' | 'post' | 'put' | 'patch' | 'delete'
 export const api = (user?: TestUser) => {
   const call = (method: Method, path: string, body?: object) => {
     let req = request(app)[method](`/api${path}`)
@@ -44,6 +44,7 @@ export const api = (user?: TestUser) => {
   return {
     get: (path: string) => call('get', path),
     post: (path: string, body: object = {}) => call('post', path, body),
+    put: (path: string, body: object = {}) => call('put', path, body),
     patch: (path: string, body: object = {}) => call('patch', path, body),
     delete: (path: string) => call('delete', path),
   }

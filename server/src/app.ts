@@ -9,6 +9,8 @@ import { listsRouter } from './routes/lists.js'
 import { recommendationsRouter } from './routes/recommendations.js'
 import { resourcesRouter } from './routes/resources.js'
 import { discoveryRouter } from './routes/discovery.js'
+import { insightsRouter } from './routes/insights.js'
+import { supportRouter } from './routes/support.js'
 
 // Built separately from index.ts so tests can import the app without listening.
 export function createApp() {
@@ -40,6 +42,9 @@ export function createApp() {
   app.use('/api', discoveryRouter)
   app.use('/api', listsRouter)
   app.use('/api', resourcesRouter)
+  app.use('/api', insightsRouter)
+  // Before adminRouter: it also serves /api/admin/support
+  app.use('/api', supportRouter)
   app.use('/api/admin', adminRouter)
 
   app.use('/api', (_req, res) => {

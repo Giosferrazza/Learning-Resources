@@ -15,7 +15,8 @@ export default function Navbar() {
   const menuOpen = menuPath === location.pathname
 
   const links = profile ? roleNav[profile.role] : []
-  const linkClass = ({ isActive }: { isActive: boolean }) => `block rounded px-2 py-1 ${isActive ? 'text-rl-teal' : 'text-white/80 hover:text-rl-teal'}`
+  // S2-01-T03 Active page: teal text plus an underline bar, not color alone
+  const linkClass = ({ isActive }: { isActive: boolean }) => `block rounded px-2 py-1 ${isActive ? 'text-rl-teal underline decoration-2 underline-offset-8' : 'text-white/80 hover:text-rl-teal'}`
 
   return (
     <nav className="sticky top-0 z-20 bg-rl-navy shadow-[0_2px_10px_rgba(0,0,0,0.25)]">
@@ -37,7 +38,7 @@ export default function Navbar() {
 
         {session && profile ? (
           <div className="flex items-center gap-2">
-            {(profile.role === 'educator' || profile.role === 'admin') && <NotificationBell />}
+            <NotificationBell />
             <AccountMenu name={profile.display_name || profile.email} email={profile.email} role={roleLabel[profile.role]} onSignOut={signOut} />
             {links.length > 0 && (
               <button type="button" className="rounded p-1 text-2xl text-white md:hidden" aria-label="Menu" aria-expanded={menuOpen} onClick={() => setMenuPath(menuOpen ? null : location.pathname)}>
@@ -120,6 +121,14 @@ function AccountMenu({ name, email, role, onSignOut }: { name: string; email: st
             <i className="bi bi-key mr-2" />
             Change password
           </Link>
+          <Link role="menuitem" to="/notifications" className="block px-4 py-2 hover:bg-slate-50">
+            <i className="bi bi-bell mr-2" />
+            Notifications
+          </Link>
+          <Link role="menuitem" to="/support" className="block px-4 py-2 hover:bg-slate-50">
+            <i className="bi bi-life-preserver mr-2" />
+            Help and support
+          </Link>
           <button
             role="menuitem"
             type="button"
@@ -138,7 +147,8 @@ function AccountMenu({ name, email, role, onSignOut }: { name: string; email: st
   )
 }
 
-// S1-22 / S1-32: educators hear about flagged content, admins about alerts
+// S1-22 / S1-32 / S2-05: everyone has notifications: students hear about new and updated
+// recommendations, educators about flagged content, admins about alerts and support requests
 function NotificationBell() {
   const [unread, setUnread] = useState(0)
   const location = useLocation()

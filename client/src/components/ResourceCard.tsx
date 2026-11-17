@@ -1,6 +1,8 @@
 import type { ReactNode } from 'react'
 import { Link } from 'react-router-dom'
-import { Card, Tags } from './ui'
+import { trackResource } from '../lib/api'
+import type { Rating } from '../lib/types'
+import { buttonClass, Card, Stars, Tags } from './ui'
 
 type Props = {
   id: string
@@ -15,9 +17,12 @@ type Props = {
   thumbnail?: string | null
   attribution?: string
   sourceLabel?: string
+  // S2-14: curated cards get a direct open button and their rating
+  url?: string | null
+  rating?: Rating
 }
 
-export default function ResourceCard({ id, title, description, subject, level, medium, actions, children, externalUrl, thumbnail, attribution, sourceLabel }: Props) {
+export default function ResourceCard({ id, title, description, subject, level, medium, actions, children, externalUrl, thumbnail, attribution, sourceLabel, url, rating }: Props) {
   return (
     <Card className="flex flex-col gap-3">
       {thumbnail && <a href={externalUrl} target="_blank" rel="noopener noreferrer" aria-label={`Watch ${title}`}><img src={thumbnail} alt="" loading="lazy" className="aspect-video w-full rounded-lg object-cover" /></a>}
@@ -32,8 +37,23 @@ export default function ResourceCard({ id, title, description, subject, level, m
         </div>
         {actions && <div className="flex shrink-0 items-start gap-2">{actions}</div>}
       </div>
-      <Tags subject={subject} level={level} medium={medium} />
+      <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
+        <Tags subject={subject} level={level} medium={medium} />
+        <Stars rating={rating} compact />
+      </div>
       {children}
+      {!externalUrl && (
+        <div className="mt-auto flex flex-wrap gap-2 pt-1">
+          {url && (
+            <a href={url} target="_blank" rel="noopener noreferrer" onClick={() => trackResource(id, 'open')} className={buttonClass('primary', 'px-3 py-1.5')}>
+              <i className="bi bi-box-arrow-up-right" aria-hidden /> Open resource
+            </a>
+          )}
+          <Link to={`/resource/${id}`} className={buttonClass('secondary', 'px-3 py-1.5')}>
+            Details
+          </Link>
+        </div>
+      )}
     </Card>
   )
 }

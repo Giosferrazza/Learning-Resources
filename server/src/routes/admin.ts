@@ -3,6 +3,9 @@ import { currentUser, requireRole, requireUser, roles, type Role } from '../lib/
 import { badRequest, check, notFound, text, maybe } from '../lib/http.js'
 import { eventTypes, track } from '../lib/events.js'
 import { runHealthCheck, uptimeSeconds } from '../lib/monitor.js'
+import { notifyStudents } from '../lib/notify.js'
+import { defaultRules } from '../lib/recommend.js'
+import { loadRules, MAX_WEIGHT, parseRules } from '../lib/rules.js'
 import { db } from '../lib/supabase.js'
 
 export const adminRouter = Router()
@@ -92,10 +95,13 @@ async function decide(id: string, adminId: string, approve: boolean, note: strin
       .update({ status: approve ? 'published' : 'rejected', review_note: note, reviewed_by: adminId, reviewed_at: new Date().toISOString() })
       .eq('id', id)
       .eq('status', 'pending')
-      .select('id, owner_id, title, status')
+      .select('id, owner_id, title, status, first_published_at')
       .maybeSingle(),
   )
   if (!resource) throw notFound('That pending submission')
+  // S2-05: first approval is a new recommendation; approving an edit of a published resource is an update
+  const firstPublish = approve && !resource.first_published_at
+  if (firstPublish) check(await db.from('resources').update({ first_published_at: new Date().toISOString() }).eq('id', resource.id))
   check(
     await db.from('notifications').insert({
       user_id: resource.owner_id,
@@ -104,8 +110,12 @@ async function decide(id: string, adminId: string, approve: boolean, note: strin
       message: approve ? `"${resource.title}" was approved and is now published.` : `"${resource.title}" was not approved: ${note}`,
     }),
   )
-  if (approve) track('resource_approved', adminId, { resourceId: resource.id })
-  return resource
+  if (approve) {
+    track('resource_approved', adminId, { resourceId: resource.id })
+    await notifyStudents(resource.id, firstPublish ? 'new' : 'updated')
+  }
+  const { first_published_at: _, ...rest } = resource
+  return rest
 }
 
 adminRouter.post('/submissions/:id/approve', async (req, res) => {
@@ -219,4 +229,34 @@ adminRouter.get('/errors', async (req, res) => {
   if (req.query.level === 'error' || req.query.level === 'critical') query = query.eq('level', req.query.level)
   const errors = check(await query.order('created_at', { ascending: false }).limit(100))
   res.json({ errors })
+})
+
+// S2-13-T01 Current recommendation rules, the defaults, and recent changes (S2-13-T03)
+adminRouter.get('/recommendation-rules', async (_req, res) => {
+  const [rules, stored, history] = await Promise.all([
+    loadRules(),
+    db.from('recommendation_settings').select('updated_at, editor:profiles(display_name, email)').eq('id', 1).maybeSingle(),
+    db.from('recommendation_settings_history').select('id, weights, require_subject, action, note, created_at, editor:profiles(display_name, email)').order('created_at', { ascending: false }).limit(20),
+  ])
+  const meta = maybe(stored)
+  res.json({ rules, defaults: defaultRules, maxWeight: MAX_WEIGHT, isDefault: !meta, updatedAt: meta?.updated_at ?? null, history: check(history) })
+})
+
+async function saveRules(adminId: string, rules: typeof defaultRules, action: 'update' | 'reset', note: string) {
+  const row = { weights: rules.weights, require_subject: rules.requireSubject }
+  check(await db.from('recommendation_settings').upsert({ id: 1, ...row, updated_by: adminId, updated_at: new Date().toISOString() }))
+  check(await db.from('recommendation_settings_history').insert({ ...row, action, note, changed_by: adminId }))
+}
+
+// S2-13-T02-S3 Saved rules apply to the very next recommendation, no redeploy
+adminRouter.put('/recommendation-rules', async (req, res) => {
+  const rules = parseRules(req.body)
+  const note = text(req.body?.note, 'Note', { max: 300, required: false })
+  await saveRules(currentUser(req).id, rules, 'update', note)
+  res.json({ rules })
+})
+
+adminRouter.post('/recommendation-rules/reset', async (req, res) => {
+  await saveRules(currentUser(req).id, defaultRules, 'reset', 'Reset to defaults')
+  res.json({ rules: defaultRules })
 })

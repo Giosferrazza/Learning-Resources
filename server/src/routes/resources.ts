@@ -1,14 +1,19 @@
 import { Router, type Request } from 'express'
+import { parseFilters } from '../../../shared/filters.js'
 import { isGoal, isLevel, isMedium, isSubject } from '../../../shared/vocabulary.js'
 import { currentUser, requireRole, requireUser, type CurrentUser } from '../lib/auth.js'
-import { badRequest, check, forbidden, HttpError, notFound, text, maybe } from '../lib/http.js'
+import { badRequest, check, forbidden, HttpError, notFound, text, maybe, uuidParam } from '../lib/http.js'
+import { recordEngagement } from '../lib/engagement.js'
+import { ratingsFor } from '../lib/ratings.js'
+import { recommend } from '../lib/recommend.js'
+import { loadRules } from '../lib/rules.js'
 import { track } from '../lib/events.js'
 import { db, RESOURCE_BUCKET } from '../lib/supabase.js'
 
 export const resourcesRouter = Router()
 resourcesRouter.use(['/library', '/resources', '/notifications'], requireUser)
 
-const FIELDS = 'id, owner_id, title, description, url, file_path, subject, level, medium, goals, status, cloned_from, review_note, submitted_at, reviewed_at, created_at, updated_at'
+const FIELDS = 'id, owner_id, title, description, url, file_path, subject, level, medium, goals, status, cloned_from, review_note, submitted_at, reviewed_at, first_published_at, created_at, updated_at'
 const LIST_FIELDS = 'id, title, description, url, subject, level, medium, goals, status, review_note, submitted_at, created_at, updated_at'
 
 type Resource = { id: string; owner_id: string; title: string; status: string; file_path: string | null; [k: string]: unknown }
@@ -55,15 +60,31 @@ function parseResource(req: Request, user: CurrentUser, submitting: boolean) {
   return { title, description, url, file_path: filePath, subject, level, medium, goals }
 }
 
-// S1-12-T01 Published library (professors; educators and admins can browse too)
+// S1-12-T01 / S2-06-T02 Search the published library (professors; educators and admins can browse too).
+// Keyword matches the title or description and combines with all three filters. Only published
+// resources are searched (S2-06-T02-S2). Order (S2-06-T02-S3): title starts with the keyword,
+// then title contains it, then description only; then best rated; then title A-Z.
+export function searchTerm(raw: unknown) {
+  return typeof raw === 'string' ? raw.trim().replace(/[%_,()\\*"]/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 100) : ''
+}
+
+type LibraryRow = { id: string; title: string; description: string; [k: string]: unknown }
+export function rankByKeyword<T extends LibraryRow>(rows: T[], q: string, rating: (id: string) => number) {
+  const needle = q.toLowerCase()
+  const tier = (r: T) => (!needle ? 0 : r.title.toLowerCase().startsWith(needle) ? 0 : r.title.toLowerCase().includes(needle) ? 1 : 2)
+  return [...rows].sort((a, b) => tier(a) - tier(b) || rating(b.id) - rating(a.id) || a.title.localeCompare(b.title) || a.id.localeCompare(b.id))
+}
+
 resourcesRouter.get('/library', requireRole('professor', 'educator'), async (req, res) => {
+  const filters = parseFilters(req.query as Record<string, unknown>)
   let query = db.from('resources').select(LIST_FIELDS).eq('status', 'published')
-  for (const key of ['subject', 'level', 'medium'] as const) {
-    if (typeof req.query[key] === 'string' && req.query[key]) query = query.eq(key, req.query[key])
-  }
-  if (typeof req.query.q === 'string' && req.query.q.trim()) query = query.ilike('title', `%${req.query.q.trim().replace(/[%_]/g, '')}%`)
-  const resources = check(await query.order('title'))
-  res.json({ resources })
+  for (const key of ['subject', 'level', 'medium'] as const) if (filters[key]) query = query.eq(key, filters[key])
+  const q = searchTerm(req.query.q)
+  if (q) query = query.or(`title.ilike.%${q}%,description.ilike.%${q}%`)
+  const rows = check(await query) as LibraryRow[]
+  const ratings = await ratingsFor(rows.map((r) => r.id))
+  const resources = rankByKeyword(rows, q, (id) => ratings.get(id)?.average ?? 0).map((r) => ({ ...r, rating: ratings.get(r.id) }))
+  res.json({ resources, q, filters })
 })
 
 // S1-19-T01 Everything this educator has created, any status
@@ -91,21 +112,57 @@ resourcesRouter.post('/resources', requireRole('educator'), async (req, res) => 
 
 // Resource detail: published resources for anyone signed in; drafts only for their owner or admins.
 // Removed resources answer 410 so pages can say "no longer available" (S1-24-T03).
+// S2-09-T02 Quality (ratings, recent feedback, saves, review date) and relevance (how it fits
+// the viewer's latest questionnaire in the same subject).
 resourcesRouter.get('/resources/:id', async (req, res) => {
   const user = currentUser(req)
-  const resource = await loadResource(String(req.params.id))
+  const resource = await loadResource(uuidParam(req.params.id, 'That resource'))
   const isOwner = resource.owner_id === user.id
   if (resource.status !== 'published' && !isOwner && user.role !== 'admin') {
     if (resource.status === 'removed') throw new HttpError(410, 'This resource is no longer available.', 'unavailable')
     throw notFound('That resource')
   }
-  const ratings = check(await db.from('resource_feedback').select('rating').eq('resource_id', resource.id).not('rating', 'is', null))
-  const average = ratings.length ? ratings.reduce((sum, r) => sum + (r.rating as number), 0) / ratings.length : null
+  const [feedbackRows, favorites, latest, rules] = await Promise.all([
+    db.from('resource_feedback').select('rating, comment, created_at, author:profiles(role)').eq('resource_id', resource.id).order('created_at', { ascending: false }),
+    db.from('favorites').select('id', { count: 'exact', head: true }).eq('resource_id', resource.id),
+    db.from('questionnaire_responses').select('topic, knowledge_level, preferred_media, goal').eq('user_id', user.id).eq('topic', String(resource.subject ?? '')).order('created_at', { ascending: false }).limit(1).maybeSingle(),
+    loadRules(),
+  ])
+  const feedback = check(feedbackRows)
+  const rated = feedback.filter((f) => f.rating !== null)
+  const average = rated.length ? Math.round((rated.reduce((sum, r) => sum + (r.rating as number), 0) / rated.length) * 10) / 10 : null
+  const distribution = [5, 4, 3, 2, 1].map((stars) => ({ stars, count: rated.filter((r) => r.rating === stars).length }))
+  // Comments are shown by role only, never by name
+  const comments = feedback
+    .filter((f) => f.comment)
+    .slice(0, 5)
+    .map((f) => ({ rating: f.rating, comment: f.comment, created_at: f.created_at, role: (f.author as unknown as { role: string } | null)?.role ?? 'student' }))
+
+  const answers = maybe(latest)
+  let relevance = null
+  if (answers) {
+    const [match] = recommend({ topic: answers.topic, level: answers.knowledge_level, media: answers.preferred_media ?? [], goal: answers.goal }, [resource as never], 1, rules).items
+    if (match) relevance = { exact: match.exact, reasons: match.reasons, gaps: match.gaps }
+  }
+
   res.json({
     resource: { ...resource, file_url: await signedFileUrl(resource.file_path) },
-    rating: { average, count: ratings.length },
+    rating: { average, count: rated.length, distribution },
+    quality: { favorites: favorites.count ?? 0, reviewedAt: (resource as Record<string, unknown>).reviewed_at ?? null, comments },
+    relevance,
     canEdit: isOwner && (user.role === 'educator' || user.role === 'admin'),
   })
+})
+
+// S2-12-T02 Record a view of the detail page or an open of the resource's link or file
+resourcesRouter.post('/resources/:id/events', async (req, res) => {
+  const user = currentUser(req)
+  const kind = req.body?.kind
+  if (kind !== 'view' && kind !== 'open') throw badRequest('Kind must be view or open.')
+  const resource = maybe(await db.from('resources').select('id, status').eq('id', uuidParam(req.params.id, 'That resource')).maybeSingle())
+  if (!resource || resource.status !== 'published') throw notFound('That resource')
+  const counted = await recordEngagement(resource.id, user.id, kind)
+  res.status(counted ? 201 : 200).json({ counted })
 })
 
 // S1-18-T02 Ownership-checked updates.

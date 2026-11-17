@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { StrictMode } from 'react'
 import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
-import { MemoryRouter, useNavigate } from 'react-router-dom'
+import { MemoryRouter, Route, Routes, useNavigate } from 'react-router-dom'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import RecommendationsPage from './RecommendationsPage'
 import QuestionnairePage from './QuestionnairePage'
@@ -35,10 +35,19 @@ describe('unified recommendations', () => {
     expect(screen.getByText('Tutorial · Free')).toBeTruthy()
     expect(screen.queryByText('Find web resources')).toBeNull()
     expect(mocks.api.mock.calls.filter(([path]) => path.startsWith('/discovery'))).toHaveLength(1)
-    fireEvent.click(screen.getByRole('button', { name: 'Video' }))
+    // S2-03 filters: format applies to library and web results alike
+    fireEvent.change(screen.getByLabelText('Format'), { target: { value: 'video' } })
     expect(screen.queryByText('Guide a')).toBeNull()
-    fireEvent.click(screen.getByRole('button', { name: 'Article' }))
+    expect(screen.getByText('Showing 1 of 2')).toBeTruthy()
+    fireEvent.change(screen.getByLabelText('Format'), { target: { value: 'article' } })
     expect(screen.queryByText('Loop video')).toBeNull()
+    expect(screen.getByText('Guide a')).toBeTruthy()
+    // A level filter leaves out web results, which have no level; no matches offers to clear
+    fireEvent.change(screen.getByLabelText('Level'), { target: { value: 'advanced' } })
+    expect(screen.getByText('No resources match these filters')).toBeTruthy()
+    fireEvent.click(screen.getAllByRole('button', { name: /Clear filters/ })[0])
+    expect(screen.getByText('Guide a')).toBeTruthy()
+    expect(screen.getByText('Loop video')).toBeTruthy()
   })
   it('keeps curated resources available while video search is pending and when it fails', async () => {
     let reject!: (error: Error) => void
@@ -97,5 +106,22 @@ describe('simple questionnaire', () => {
     expect((field as HTMLTextAreaElement).maxLength).toBe(500)
     fireEvent.click(screen.getByRole('button', { name: /Get my recommendations/i }))
     await waitFor(() => expect(mocks.api).toHaveBeenCalledWith('/questionnaire', { method: 'POST', body: { topic: 'python', level: 'beginner', media: ['video'], goal: 'exam', learningRequest: learning_request ?? '' } }))
+  })
+})
+
+describe('S2-16 edit questionnaire', () => {
+  it('prefills the chosen questionnaire and saves it in place', async () => {
+    mocks.api.mockImplementation(async (path: string) => path === '/questionnaire/q1' ? { response: { topic: 'excel', knowledge_level: 'advanced', preferred_media: ['tool'], goal: 'career', learning_request: null } } : { id: 'q1' })
+    render(<MemoryRouter initialEntries={['/questionnaire/q1/edit']}><Routes><Route path="/questionnaire/:id/edit" element={<QuestionnairePage />} /></Routes></MemoryRouter>)
+    fireEvent.click(await screen.findByRole('button', { name: /Save and refresh recommendations/ }))
+    await waitFor(() => expect(mocks.api).toHaveBeenCalledWith('/questionnaire/q1', { method: 'PATCH', body: { topic: 'excel', level: 'advanced', media: ['tool'], goal: 'career', learningRequest: '' } }))
+    expect(mocks.api).not.toHaveBeenCalledWith('/questionnaire', expect.anything())
+  })
+
+  it('starts a new questionnaire blank', async () => {
+    render(<MemoryRouter initialEntries={['/questionnaire?new=1']}><QuestionnairePage /></MemoryRouter>)
+    const subject = (await screen.findByLabelText('Subject')) as HTMLSelectElement
+    expect(subject.value).toBe('')
+    expect(mocks.api).not.toHaveBeenCalled()
   })
 })

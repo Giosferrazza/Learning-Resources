@@ -12,13 +12,13 @@ export const roleLabel: Record<Role, string> = { student: 'Student', professor: 
 
 export const roleNav: Record<Role, { to: string; label: string }[]> = {
   student: [
-    { to: '/questionnaire', label: 'Find resources' },
+    { to: '/questionnaires', label: 'My questionnaires' },
     { to: '/recommendations', label: 'Recommendations' },
     { to: '/favorites', label: 'Favorites' },
     { to: '/lists', label: 'My lists' },
   ],
   professor: [
-    { to: '/questionnaire', label: 'Plan a lesson' },
+    { to: '/questionnaires', label: 'Lesson plans' },
     { to: '/library', label: 'Library' },
     { to: '/lists', label: 'My lists' },
     { to: '/favorites', label: 'Favorites' },
@@ -26,12 +26,13 @@ export const roleNav: Record<Role, { to: string; label: string }[]> = {
   educator: [
     { to: '/my-submissions', label: 'My submissions' },
     { to: '/library', label: 'Library' },
+    { to: '/insights', label: 'Reports' },
   ],
   admin: [
     { to: '/admin', label: 'Dashboard' },
     { to: '/admin/submissions', label: 'Review' },
     { to: '/admin/reports', label: 'Reports' },
-    { to: '/admin/users', label: 'Users' },
+    { to: '/admin/support', label: 'Support' },
   ],
 }
 

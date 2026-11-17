@@ -214,7 +214,7 @@ describe('S1-09-T04 rating and feedback', () => {
     const mine = await api(student).get(`/resources/${r.id}/feedback/mine`)
     expect(mine.body.feedback).toMatchObject({ rating: 5, comment: '' })
     const detail = await api(otherStudent).get(`/resources/${r.id}`)
-    expect(detail.body.rating).toEqual({ average: 5, count: 1 })
+    expect(detail.body.rating).toMatchObject({ average: 5, count: 1 })
   })
 })
 

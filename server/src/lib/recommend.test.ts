@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { recommend, type Answers, type Candidate } from './recommend.js'
+import { formatFallback, recommend, type Answers, type Candidate } from './recommend.js'
 
 let n = 0
 const res = (over: Partial<Candidate>): Candidate => ({
@@ -86,5 +86,43 @@ describe('S1-35 closest matches', () => {
 
   it('returns nothing for an empty library', () => {
     expect(recommend(answers, [])).toEqual({ exact: false, items: [] })
+  })
+})
+
+describe('S2-13 configurable rules', () => {
+  const base = { id: 'x', title: 'X', subject: 'statistics', level: 'beginner', medium: 'video', goals: [] as string[], created_at: '2026-01-01' }
+  const ask = { topic: 'statistics' as const, level: 'beginner' as const, media: ['article' as const], goal: 'exam' as const }
+
+  it('uses the stored weights', () => {
+    const levelOnly = { ...base, id: 'level', title: 'Level' }
+    const goalOnly = { ...base, id: 'goal', title: 'Goal', level: 'advanced', goals: ['exam'] }
+    expect(recommend(ask, [levelOnly, goalOnly]).items[0].resource.id).toBe('level')
+    const goalHeavy = { weights: { subject: 3, level: 1, medium: 1, goal: 5 }, requireSubject: true }
+    expect(recommend(ask, [levelOnly, goalOnly], 20, goalHeavy).items[0].resource.id).toBe('goal')
+  })
+
+  it('lets other subjects in, ranked below, when subject is not required', () => {
+    const other = { ...base, id: 'other', title: 'Other', subject: 'excel', level: 'beginner', medium: 'article' }
+    const same = { ...base, id: 'same', title: 'Same', medium: 'video' }
+    const open = { weights: { subject: 3, level: 2, medium: 1, goal: 1 }, requireSubject: false }
+    expect(recommend(ask, [other, same]).items.map((i) => i.resource.id)).toEqual(['same'])
+    const result = recommend(ask, [other, same], 20, open)
+    expect(result.exact).toBe(false)
+    expect(result.items.map((i) => i.resource.id)).toEqual(['same', 'other'])
+    expect(result.items[1].gaps).toContain('Subject: Excel, not the one you picked')
+  })
+})
+
+describe('S2-15 format fallback', () => {
+  const published = [
+    { subject: 'statistics', medium: 'video' },
+    { subject: 'statistics', medium: 'article' },
+    { subject: 'excel', medium: 'tool' },
+  ]
+  it('flags a fallback only when nothing in the subject comes in a picked format', () => {
+    expect(formatFallback({ topic: 'statistics', media: ['tool'] }, published)).toBe(true)
+    expect(formatFallback({ topic: 'statistics', media: ['tool', 'video'] }, published)).toBe(false)
+    expect(formatFallback({ topic: 'statistics', media: [] }, published)).toBe(false)
+    expect(formatFallback({ topic: 'python', media: ['tool'] }, published)).toBe(false)
   })
 })

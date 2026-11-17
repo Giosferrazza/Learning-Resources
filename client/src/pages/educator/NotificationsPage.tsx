@@ -13,9 +13,17 @@ const icons: Record<string, string> = {
   alert_recovery: 'check-circle',
   alert_critical_error: 'bug',
   alert_error_burst: 'bug',
+  new_recommendation: 'stars',
+  resource_updated: 'arrow-repeat',
+  support_request: 'life-preserver',
+  support_resolved: 'check2-circle',
 }
 
-// S1-22 Notifications (flags, review decisions; admin alerts from S1-32)
+// S2-05-T03 Each notification opens what it is about
+const linkFor = (n: Notification) =>
+  n.type === 'support_request' ? '/admin/support' : n.type === 'support_resolved' ? '/support' : !n.resource_id ? null : n.type === 'submission_rejected' ? `/resources/${n.resource_id}/edit` : `/resource/${n.resource_id}`
+
+// S1-22 Notifications (flags, review decisions; admin alerts from S1-32; S2-05 student recommendations; S2-02 support)
 export default function NotificationsPage() {
   const { data, setData, error, loading, reload } = useApi<{ notifications: Notification[]; unread: number }>('/notifications')
 
@@ -36,7 +44,7 @@ export default function NotificationsPage() {
     <Page title="Notifications" actions={data && data.unread > 0 && <Button variant="secondary" onClick={markAll}>Mark all as read</Button>}>
       {loading && <Loading />}
       {error && <LoadError error={error} retry={reload} />}
-      {data && !data.notifications.length && <Empty icon="bell" title="You’re all caught up" />}
+      {data && !data.notifications.length && <Empty icon="bell" title="You’re all caught up">New recommendations, updates and replies will show up here.</Empty>}
       <ul className="space-y-2">
         {data?.notifications.map((n) => {
           const body = (
@@ -51,7 +59,7 @@ export default function NotificationsPage() {
           )
           return (
             <li key={n.id} onClick={() => markRead(n)}>
-              {n.resource_id ? <Link to={n.type === 'submission_rejected' ? `/resources/${n.resource_id}/edit` : `/resource/${n.resource_id}`}>{body}</Link> : <button type="button" className="block w-full text-left">{body}</button>}
+              {linkFor(n) ? <Link to={linkFor(n)!}>{body}</Link> : <button type="button" className="block w-full text-left">{body}</button>}
             </li>
           )
         })}

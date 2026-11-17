@@ -12,6 +12,10 @@ app.use(express.json())
 app.use('/api', recommendationsRouter)
 const errors: ErrorRequestHandler = (err, _req, res, _next) => res.status(err instanceof HttpError ? err.status : 500).json({ error: err.message, code: err.code })
 app.use(errors)
+// Questionnaire IDs are UUIDs; malformed IDs are rejected before any lookup
+const OWNED = '00000000-0000-4000-8000-000000000001'
+const OLD = '00000000-0000-4000-8000-000000000002'
+const OTHER = '00000000-0000-4000-8000-000000000003'
 const answers = { topic: 'python', level: 'beginner', media: ['video'], goal: 'exam' }
 let rows: Record<string, unknown>[]
 let role: string
@@ -32,13 +36,15 @@ beforeEach(() => {
     let inserted: Record<string, unknown> | undefined
     const result = () => ({ error: null, data: table === 'profiles'
       ? { role, account_status: suspended ? 'suspended' : 'active' }
+      : table === 'recommendation_settings' || table === 'questionnaire_snapshots' ? null
+      : table === 'resource_feedback' ? []
       : table === 'resources' ? [{ id: 'resource', title: 'Python guide', subject: 'python', level: 'beginner', medium: 'video', goals: ['exam'], created_at: '2026-01-01' }]
       : inserted ?? rows.find((row) => Object.entries(filters).every(([key, value]) => row[key] === value)) ?? null })
     const query = {
       select: vi.fn().mockReturnThis(),
       eq: vi.fn((key: string, value: unknown) => { filters[key] = value; if (table === 'resources') resourceFilters[key] = value; return query }),
-      order: vi.fn().mockReturnThis(), limit: vi.fn().mockReturnThis(),
-      insert: vi.fn((row: Record<string, unknown>) => { inserted = { id: 'owned', ...row }; rows.unshift(inserted); return query }),
+      order: vi.fn().mockReturnThis(), limit: vi.fn().mockReturnThis(), in: vi.fn().mockReturnThis(), not: vi.fn().mockReturnThis(),
+      insert: vi.fn((row: Record<string, unknown>) => { inserted = { id: OWNED, ...row }; if (table === 'questionnaire_responses') rows.unshift(inserted); return query }),
       single: vi.fn(async () => result()), maybeSingle: vi.fn(async () => result()),
       then: (resolve: (value: unknown) => unknown) => Promise.resolve(result()).then(resolve),
     }
@@ -52,7 +58,7 @@ describe('questionnaire persistence and recommendations', () => {
     const latest = await get('/questionnaire/latest')
     expect(latest.body.response.learning_request).toBe(learningRequest?.trim() || null)
     expect(latest.body.response.user_id).toBe('student')
-    const recommendations = await get('/recommendations?responseId=owned')
+    const recommendations = await get(`/recommendations?responseId=${OWNED}`)
     expect(recommendations.body.answers.learningRequest).toBe(learningRequest?.trim() || null)
     expect(recommendations.body.items[0].resource.id).toBe('resource')
     expect(resourceFilters.status).toBe('published')
@@ -62,8 +68,8 @@ describe('questionnaire persistence and recommendations', () => {
     expect(rows).toHaveLength(0)
   })
   it('handles an old questionnaire without the new column value', async () => {
-    rows.push({ id: 'old', user_id: 'student', topic: 'python', knowledge_level: 'beginner', preferred_media: [], goal: null })
-    const result = await get('/recommendations?responseId=old')
+    rows.push({ id: OLD, user_id: 'student', topic: 'python', knowledge_level: 'beginner', preferred_media: [], goal: null })
+    const result = await get(`/recommendations?responseId=${OLD}`)
     expect(result.status).toBe(200)
     expect(result.body.answers.learningRequest).toBeNull()
     expect(result.body.items).toHaveLength(1)
@@ -71,7 +77,7 @@ describe('questionnaire persistence and recommendations', () => {
   it('preserves professor questionnaire access', async () => {
     role = 'professor'
     expect((await post({ ...answers, learningRequest: 'Teach loops' })).status).toBe(201)
-    expect((await get('/recommendations?responseId=owned')).status).toBe(200)
+    expect((await get(`/recommendations?responseId=${OWNED}`)).status).toBe(200)
   })
   it('requires authentication and rejects suspended accounts', async () => {
     expect((await request(app).post('/api/questionnaire').send(answers)).status).toBe(401)
@@ -80,8 +86,8 @@ describe('questionnaire persistence and recommendations', () => {
     expect((await post(answers)).status).toBe(403)
   })
   it('cannot read another user questionnaire or override submission ownership', async () => {
-    rows.push({ id: 'other', user_id: 'someone-else' })
-    expect((await get('/recommendations?responseId=other')).status).toBe(404)
+    rows.push({ id: OTHER, user_id: 'someone-else' })
+    expect((await get(`/recommendations?responseId=${OTHER}`)).status).toBe(404)
     expect((await get('/questionnaire/latest')).body.response).toBeNull()
     await post({ ...answers, user_id: 'someone-else' })
     expect(rows[0].user_id).toBe('student')

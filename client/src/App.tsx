@@ -3,7 +3,7 @@ import { Route, Routes, useLocation } from 'react-router-dom'
 import Footer from './components/Footer'
 import Navbar from './components/Navbar'
 import { GuestOnly, RequireAuth } from './components/RequireAuth'
-import { Empty, LinkButton } from './components/ui'
+import { Empty, LinkButton, SideNav, WithSideNav } from './components/ui'
 import Walkthrough from './components/Walkthrough'
 import AccountPage from './pages/AccountPage'
 import ChangePasswordPage from './pages/ChangePasswordPage'
@@ -14,7 +14,14 @@ import LibraryPage from './pages/LibraryPage'
 import ListEditPage from './pages/ListEditPage'
 import ListsPage from './pages/ListsPage'
 import LoginPage from './pages/LoginPage'
+import { HistoryDetailPage, HistoryPage } from './pages/HistoryPage'
 import QuestionnairePage from './pages/QuestionnairePage'
+import QuestionnairesPage from './pages/QuestionnairesPage'
+import SupportPage from './pages/SupportPage'
+import EngagementPage, { EngagementDetailPage } from './pages/insights/EngagementPage'
+import PreferencesReportPage from './pages/insights/PreferencesReportPage'
+import AdminRulesPage from './pages/admin/AdminRulesPage'
+import AdminSupportPage from './pages/admin/AdminSupportPage'
 import RecommendationsPage from './pages/RecommendationsPage'
 import RegisterPage from './pages/RegisterPage'
 import ResetPasswordPage from './pages/ResetPasswordPage'
@@ -53,6 +60,21 @@ function NotFound() {
   )
 }
 
+// S2-01-T02 Admin side navigation: every admin tool, one click away
+const adminLinks = [
+  { to: '/admin', label: 'Dashboard', icon: 'speedometer2' },
+  { to: '/admin/submissions', label: 'Review', icon: 'patch-check' },
+  { to: '/admin/reports', label: 'Reports', icon: 'flag' },
+  { to: '/admin/support', label: 'Support', icon: 'life-preserver' },
+  { to: '/admin/users', label: 'Users', icon: 'people' },
+  { to: '/admin/resources', label: 'Resources', icon: 'collection' },
+  { to: '/admin/rules', label: 'Recommendation rules', icon: 'sliders' },
+  { to: '/admin/analytics', label: 'Analytics', icon: 'graph-up' },
+  { to: '/admin/monitoring', label: 'Monitoring', icon: 'activity' },
+  { to: '/admin/errors', label: 'Error logs', icon: 'bug' },
+]
+const adminPage = (element: React.ReactNode) => <RequireAuth roles={['admin']}><WithSideNav nav={<SideNav title="Admin" links={adminLinks} />}>{element}</WithSideNav></RequireAuth>
+
 const guard = (element: React.ReactNode, roles?: Parameters<typeof RequireAuth>[0]['roles']) => <RequireAuth roles={roles}>{element}</RequireAuth>
 const guest = (element: React.ReactNode) => <GuestOnly>{element}</GuestOnly>
 
@@ -71,6 +93,7 @@ export default function App() {
           <Route path="/forgot-password" element={guest(<ForgotPasswordPage />)} />
           <Route path="/reset-password" element={<ResetPasswordPage />} />
           <Route path="/shared/:token" element={<SharedListPage />} />
+          <Route path="/support" element={<SupportPage />} />
 
           {/* Any signed-in account */}
           <Route path="/account" element={guard(<AccountPage />)} />
@@ -79,7 +102,11 @@ export default function App() {
           <Route path="/notifications" element={guard(<NotificationsPage />)} />
 
           {/* Students and professors (S1-11) */}
+          <Route path="/questionnaires" element={guard(<QuestionnairesPage />, ['student', 'professor'])} />
           <Route path="/questionnaire" element={guard(<QuestionnairePage />, ['student', 'professor'])} />
+          <Route path="/questionnaire/:id/edit" element={guard(<QuestionnairePage />, ['student', 'professor'])} />
+          <Route path="/history" element={guard(<HistoryPage />, ['student', 'professor'])} />
+          <Route path="/history/:id" element={guard(<HistoryDetailPage />, ['student', 'professor'])} />
           <Route path="/recommendations" element={guard(<RecommendationsPage />, ['student', 'professor'])} />
           <Route path="/favorites" element={guard(<FavoritesPage />, ['student', 'professor'])} />
           <Route path="/lists" element={guard(<ListsPage />, ['student', 'professor'])} />
@@ -90,16 +117,21 @@ export default function App() {
           <Route path="/my-submissions" element={guard(<MySubmissionsPage />, ['educator'])} />
           <Route path="/resources/new" element={guard(<ResourceFormPage />, ['educator'])} />
           <Route path="/resources/:id/edit" element={guard(<ResourceFormPage />, ['educator'])} />
+          <Route path="/insights" element={guard(<PreferencesReportPage />, ['educator'])} />
+          <Route path="/insights/engagement" element={guard(<EngagementPage />, ['educator'])} />
+          <Route path="/insights/engagement/:id" element={guard(<EngagementDetailPage />, ['educator'])} />
 
           {/* Admins */}
-          <Route path="/admin" element={guard(<AdminPage />, ['admin'])} />
-          <Route path="/admin/users" element={guard(<AdminUsersPage />, ['admin'])} />
-          <Route path="/admin/submissions" element={guard(<AdminSubmissionsPage />, ['admin'])} />
-          <Route path="/admin/resources" element={guard(<AdminResourcesPage />, ['admin'])} />
-          <Route path="/admin/reports" element={guard(<AdminReportsPage />, ['admin'])} />
-          <Route path="/admin/monitoring" element={guard(<AdminMonitoringPage />, ['admin'])} />
-          <Route path="/admin/analytics" element={guard(<AdminAnalyticsPage />, ['admin'])} />
-          <Route path="/admin/errors" element={guard(<AdminErrorLogsPage />, ['admin'])} />
+          <Route path="/admin" element={adminPage(<AdminPage />)} />
+          <Route path="/admin/users" element={adminPage(<AdminUsersPage />)} />
+          <Route path="/admin/submissions" element={adminPage(<AdminSubmissionsPage />)} />
+          <Route path="/admin/resources" element={adminPage(<AdminResourcesPage />)} />
+          <Route path="/admin/reports" element={adminPage(<AdminReportsPage />)} />
+          <Route path="/admin/monitoring" element={adminPage(<AdminMonitoringPage />)} />
+          <Route path="/admin/analytics" element={adminPage(<AdminAnalyticsPage />)} />
+          <Route path="/admin/errors" element={adminPage(<AdminErrorLogsPage />)} />
+          <Route path="/admin/support" element={adminPage(<AdminSupportPage />)} />
+          <Route path="/admin/rules" element={adminPage(<AdminRulesPage />)} />
 
           <Route path="*" element={<NotFound />} />
         </Routes>

@@ -52,3 +52,15 @@ export function currentUser(req: Request): CurrentUser {
   if (!req.user) throw new HttpError(401, 'Please sign in.', 'signed_out')
   return req.user
 }
+
+// Public routes that do more for signed-in people (S2-02 support form). A missing or
+// expired token just means "guest"; a suspended account is still a guest here.
+export const optionalUser: RequestHandler = async (req, res, next) => {
+  if (!req.headers.authorization) return next()
+  try {
+    await requireUser(req, res, () => {})
+  } catch {
+    req.user = undefined
+  }
+  next()
+}

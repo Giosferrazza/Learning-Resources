@@ -60,3 +60,22 @@ export const isSubject = (v: unknown): v is Subject => typeof v === 'string' && 
 export const isLevel = (v: unknown): v is Level => typeof v === 'string' && v in levels
 export const isMedium = (v: unknown): v is Medium => typeof v === 'string' && v in media
 export const isGoal = (v: unknown): v is Goal => typeof v === 'string' && v in goals
+
+// S2-02 What a support request is about
+export const supportCategories = {
+  account: 'My account or sign-in',
+  recommendations: 'Recommendations',
+  resources: 'A resource or the library',
+  bug: 'Something is broken',
+  other: 'Something else',
+} as const
+export type SupportCategory = keyof typeof supportCategories
+export const isSupportCategory = (v: unknown): v is SupportCategory => typeof v === 'string' && v in supportCategories
+
+// S2-08 Curated list export formats
+export const exportFormats = {
+  csv: 'Spreadsheet (CSV)',
+  md: 'Syllabus text (Markdown)',
+  html: 'LMS page (HTML)',
+} as const
+export type ExportFormat = keyof typeof exportFormats

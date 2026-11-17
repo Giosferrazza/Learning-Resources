@@ -12,6 +12,8 @@ export type Profile = {
   created_at: string
 }
 
+export type Rating = { average: number | null; count: number }
+
 export type ResourceStatus = 'draft' | 'pending' | 'published' | 'rejected' | 'removed'
 
 export type Resource = {
@@ -27,6 +29,7 @@ export type Resource = {
   medium: Medium | null
   goals: Goal[]
   status: ResourceStatus
+  rating?: Rating
   review_note?: string | null
   cloned_from?: string | null
   submitted_at?: string | null
@@ -39,3 +42,5 @@ export type ResourceSummary = { id: string | null; title: string; subject: strin
 export type ListSummary = { id: string; name: string; share_token: string | null; itemCount: number; updated_at: string }
 
 export type Notification = { id: string; type: string; message: string; resource_id: string | null; read_at: string | null; created_at: string }
+
+export type QuestionnaireResponse = { id: string; topic: Subject; knowledge_level: Level; preferred_media: Medium[]; goal: Goal | null; learning_request: string | null; created_at: string; updated_at: string }

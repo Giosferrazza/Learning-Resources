@@ -58,7 +58,7 @@ function RulesForm({ data, reload, state, setState }: { data: Data; reload: () =
   }
 
   return (
-    <Page title="Recommendation rules" subtitle="How resources are scored for each questionnaire. Changes apply to the next recommendation, no redeploy needed." breadcrumbs={[{ label: 'Dashboard', to: '/admin' }, { label: 'Recommendation rules' }]}>
+    <Page title="Recommendation rules" subtitle="How resources are scored. Changes apply right away." breadcrumbs={[{ label: 'Dashboard', to: '/admin' }, { label: 'Recommendation rules' }]}>
       <div className="space-y-6">
         {state.ok && <Alert kind="success">{state.ok}</Alert>}
         {state.error && <Alert kind="error">{state.error}</Alert>}

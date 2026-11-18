@@ -25,13 +25,8 @@ function Icon({ name, center = false }: { name: string; center?: boolean }) {
   )
 }
 
-function SectionHeading({ title, subtitle }: { title: string; subtitle: string }) {
-  return (
-    <>
-      <h2 className="mb-2 text-center text-3xl font-bold">{title}</h2>
-      <p className="mb-10 text-center text-slate-500">{subtitle}</p>
-    </>
-  )
+function SectionHeading({ title }: { title: string }) {
+  return <h2 className="mb-10 text-center text-3xl font-bold">{title}</h2>
 }
 
 const steps = [
@@ -41,9 +36,9 @@ const steps = [
 ]
 
 const roles = [
-  { icon: 'person-workspace', title: 'Students', body: 'Take questionnaires, get recommendations, filter results, and save favorites.' },
-  { icon: 'easel2', title: 'Professors', body: 'Use the questionnaire to plan lessons and curate lectures from existing resources.' },
-  { icon: 'cloud-upload', title: 'Educators', body: 'Add, update, and remove content, and view reports on student learning preferences.' },
+  { icon: 'person-workspace', title: 'Students', body: 'Get matched resources and save favorites.' },
+  { icon: 'easel2', title: 'Professors', body: 'Find and share resources for your class.' },
+  { icon: 'cloud-upload', title: 'Educators', body: 'Publish resources and see what students need.' },
 ]
 
 export default function HomePage() {
@@ -77,10 +72,9 @@ export default function HomePage() {
 
           <div className="lg:col-span-5">
             <div className="rounded-2xl bg-white p-6 text-left text-rl-text shadow-2xl">
-              <p className="mb-2 text-xs font-semibold tracking-[0.06em] text-rl-teal-dark uppercase">Featured: Personalized Recommendations</p>
               <h2 className="text-2xl font-bold">Your goals. Your level. Your format.</h2>
               <ul className="mt-4 mb-6 space-y-2">
-                {['Pick a subject and knowledge level', 'Choose videos, articles, or tools', 'Filter your recommendation list', 'Favorite resources and revisit them later'].map((item) => (
+                {['Pick a subject and level', 'Choose videos, articles, or tools', 'Save your favorites'].map((item) => (
                   <li key={item}>
                     <i className="bi bi-check-circle-fill mr-2 text-rl-teal" />
                     {item}
@@ -98,7 +92,7 @@ export default function HomePage() {
       <main>
         <section id="how-it-works" className="py-16">
           <div className="mx-auto max-w-6xl px-4">
-            <SectionHeading title="How It Works" subtitle={'Three quick steps from "where do I start?" to a plan.'} />
+            <SectionHeading title="How it works" />
             <div className="grid gap-6 md:grid-cols-3">
               {steps.map((s) => (
                 <Card key={s.title} className="text-center">
@@ -113,7 +107,7 @@ export default function HomePage() {
 
         <section id="roles" className="bg-rl-light py-16">
           <div className="mx-auto max-w-6xl px-4">
-            <SectionHeading title="Built for Everyone in the Learning Loop" subtitle="Three roles, one platform. Here's what each one does." />
+            <SectionHeading title="Built for every role" />
             <div className="grid gap-6 md:grid-cols-3">
               {roles.map((r) => (
                 <Card key={r.title}>
@@ -129,8 +123,7 @@ export default function HomePage() {
         <section id="support" className="py-16 text-center">
           <div className="mx-auto max-w-6xl px-4">
             <h2 className="mb-2 text-3xl font-bold">Ready to find your next resource?</h2>
-            <p className="mb-6 text-slate-500">It takes about a minute. Questions? Our support page has you covered.</p>
-            {/* TODO: add a "Visit Support" button once a support page exists */}
+            <p className="mb-6 text-slate-500">It takes about a minute.</p>
             <Link to="/questionnaire" className={primaryBtn}>
               Start the Questionnaire
             </Link>

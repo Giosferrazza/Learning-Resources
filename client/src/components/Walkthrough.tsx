@@ -7,24 +7,24 @@ import { Button } from './ui'
 
 const steps: Record<Role, { icon: string; title: string; body: string }[]> = {
   student: [
-    { icon: 'ui-checks', title: 'Answer a short questionnaire', body: 'Pick a subject, your level, the formats you like and your goal. It takes about a minute.' },
-    { icon: 'stars', title: 'Get matched resources', body: 'Each recommendation says why it was picked. If nothing fits exactly, we show the closest matches.' },
-    { icon: 'heart-fill', title: 'Save what helps', body: 'Heart resources or whole recommendation lists and find them later under Favorites.' },
+    { icon: 'ui-checks', title: 'Answer a short questionnaire', body: 'Pick a subject, level, formats and goal. About a minute.' },
+    { icon: 'stars', title: 'Get matched resources', body: 'Each pick says why it fits.' },
+    { icon: 'heart-fill', title: 'Save what helps', body: 'Heart anything to find it later in Favorites.' },
   ],
   professor: [
-    { icon: 'ui-checks', title: 'Plan with the questionnaire', body: 'Describe the topic and level you are teaching to get matched resources.' },
-    { icon: 'grid', title: 'Browse the whole library', body: 'The Library shows every published resource, filterable by subject, level and format.' },
-    { icon: 'share', title: 'Curate and share lists', body: 'Collect resources into lists and share a read-only link with your students.' },
+    { icon: 'ui-checks', title: 'Plan with the questionnaire', body: 'Describe what you teach to get matched resources.' },
+    { icon: 'grid', title: 'Browse the whole library', body: 'Every published resource, with filters.' },
+    { icon: 'share', title: 'Curate and share lists', body: 'Share a read-only list with your students.' },
   ],
   educator: [
-    { icon: 'cloud-upload', title: 'Upload resources', body: 'Add a link or a file, tag its subject, level and format, then save a draft or submit it.' },
-    { icon: 'patch-check', title: 'Admins review submissions', body: 'Approved resources become visible to students. You’ll be notified of the decision.' },
-    { icon: 'bell', title: 'Stay on top of reports', body: 'If someone flags one of your resources, the bell lets you know.' },
+    { icon: 'cloud-upload', title: 'Upload resources', body: 'Add a link or file, tag it, then submit.' },
+    { icon: 'patch-check', title: 'Admins review submissions', body: 'Approved resources go live. You’ll be notified.' },
+    { icon: 'bell', title: 'Stay on top of reports', body: 'The bell tells you when a resource is flagged.' },
   ],
   admin: [
-    { icon: 'speedometer2', title: 'Your dashboard', body: 'See pending submissions, open reports and system health at a glance.' },
-    { icon: 'people', title: 'Manage people', body: 'Change roles and suspend or reactivate accounts from Users.' },
-    { icon: 'activity', title: 'Watch the system', body: 'Monitoring, analytics and error logs are under the dashboard.' },
+    { icon: 'speedometer2', title: 'Your dashboard', body: 'Submissions, reports and system health.' },
+    { icon: 'people', title: 'Manage people', body: 'Change roles or suspend accounts in Users.' },
+    { icon: 'activity', title: 'Watch the system', body: 'Monitoring, analytics and error logs.' },
   ],
 }
 

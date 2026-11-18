@@ -15,7 +15,7 @@ export default function QuestionnairesPage() {
   return (
     <Page
       title="My questionnaires"
-      subtitle={professor ? 'One questionnaire per class or topic. Each keeps its own recommendations.' : 'One questionnaire per topic or goal. Each keeps its own recommendations.'}
+      subtitle={professor ? 'One per class or topic.' : 'One per topic or goal.'}
       actions={
         <>
           <LinkButton to="/history" variant="secondary">
@@ -31,7 +31,7 @@ export default function QuestionnairesPage() {
       {error && <ErrorState error={error} retry={reload} />}
       {data && data.responses.length === 0 && (
         <Empty icon="ui-checks" title="No questionnaires yet">
-          <p>Answer a few questions about a topic and we’ll match resources to you.</p>
+          <p>Answer a few questions and we’ll match resources to you.</p>
           <LinkButton to="/questionnaire?new=1" className="mt-4">
             Start your first questionnaire
           </LinkButton>

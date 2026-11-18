@@ -116,7 +116,7 @@ function Results({ data }: { data: Result }) {
     >
       <div className="space-y-4">
         <QuestionnaireSwitcher current={data.responseId} />
-        {params.get('updated') === '1' && <Alert kind="success">Your answers were updated and these recommendations were refreshed. The previous result is saved in <Link to="/history" className="font-semibold underline">History</Link>.</Alert>}
+        {params.get('updated') === '1' && <Alert kind="success">Answers updated. Previous results are in <Link to="/history" className="font-semibold underline">History</Link>.</Alert>}
         {saved.ok && (
           <Alert kind="success">
             {saved.ok}{' '}
@@ -128,16 +128,15 @@ function Results({ data }: { data: Result }) {
         {saved.error && <Alert kind="error">{saved.error}</Alert>}
 
         {data.answers.learningRequest && <p className="break-words text-sm text-slate-600">Your learning request: {data.answers.learningRequest}</p>}
-        <p className="text-sm text-slate-600">Educator-approved library resources and resources found on the web, together. Favorites and saved lists include library resources only.</p>
         {data.items.length === 0 && <Alert kind="info">{data.libraryEmpty ? 'The educator library is empty right now.' : `No educator-approved resources in ${subjects[answers.topic]} match yet.`} External videos may still be available below.</Alert>}
         {data.mediumFallback ? (
           <Alert kind="info">Nothing in {subjects[answers.topic]} comes as {answers.media.map((m) => media[m].toLowerCase()).join(' or ')} yet, so these are the closest matches in other formats.</Alert>
         ) : (
-          data.items.length > 0 && !data.exact && <Alert kind="info">No library resources match all your answers; showing the closest matches.</Alert>
+          data.items.length > 0 && !data.exact && <Alert kind="info">No exact matches. Showing the closest ones.</Alert>
         )}
-        {web.loading && <p role="status" className="text-sm text-slate-500">Searching the web for more resources… You can browse library resources while we search.</p>}
+        {web.loading && <p role="status" className="text-sm text-slate-500">Searching the web for more…</p>}
         {web.error && <Alert kind="info">{web.error} Your library recommendations are still available.</Alert>}
-        {web.data && web.data.resources.length === 0 && <Alert kind="info">No web resources found for these answers. You can refine your learning request using Change answers.</Alert>}
+        {web.data && web.data.resources.length === 0 && <Alert kind="info">No web results for these answers.</Alert>}
         {items.length > 0 && <FilterBar filters={filters} onChange={setFilters} onClear={clearFilters} />}
         {active > 0 && items.length > 0 && (
           <p className="text-sm text-slate-500" role="status">
@@ -165,10 +164,8 @@ function Results({ data }: { data: Result }) {
                   <p className="font-medium text-slate-700">
                     {exact ? 'Why this matches' : 'Closest match'} {!exact && <Pill tone="amber">Partial</Pill>}
                   </p>
-                  <ul className="mt-1 space-y-0.5 text-slate-600">
-                    {reasons.map((reason) => <li key={reason}><i className="bi bi-check2 mr-1 text-rl-teal" />{reason}</li>)}
-                    {gaps.map((gap) => <li key={gap} className="text-slate-500"><i className="bi bi-dash mr-1" />{gap}</li>)}
-                  </ul>
+                  <p className="mt-1 text-slate-600">{reasons.map((reason) => reason.replace(/^[^:]+:\s*/, '')).join(' · ')}</p>
+                  {gaps.length > 0 && <p className="text-slate-500">{gaps.join(' · ')}</p>}
                 </div>
               </ResourceCard>
               )

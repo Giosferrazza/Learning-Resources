@@ -43,7 +43,7 @@ export default function SupportPage() {
   }
 
   return (
-    <Page title="Help and support" subtitle="Something not working, or not sure how to do something? An admin will get back to you.">
+    <Page title="Help and support" subtitle="An admin will get back to you.">
       <div className="grid gap-6 lg:grid-cols-[1fr_20rem]">
         <Card>
           {state.ok ? (

@@ -40,7 +40,7 @@ export default function LoginPage() {
     <div className="mx-auto max-w-md px-4 py-12">
       <Card className="p-8">
         <h1 className="text-2xl font-bold">Sign in</h1>
-        <p className="mt-1 text-sm text-slate-600">Welcome back to Resource Learning.</p>
+        <p className="mt-1 text-sm text-slate-600">Welcome back.</p>
         <form onSubmit={submit} className="mt-6 space-y-4">
           {message === 'password-updated' && <Alert kind="success">Your password was updated. Sign in with your new password.</Alert>}
           {notice && <Alert kind="info">{notice}</Alert>}

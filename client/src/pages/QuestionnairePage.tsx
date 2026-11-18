@@ -83,12 +83,12 @@ export default function QuestionnairePage() {
 
   const title = editId ? 'Edit your answers' : professor ? 'Plan a lesson' : 'What do you want to learn?'
   const subtitle = editId
-    ? 'Change anything and we’ll refresh this questionnaire’s recommendations. Your other questionnaires stay as they are.'
+    ? 'Changes refresh this questionnaire’s results.'
     : fromId
-      ? 'Retaking starts from your earlier answers and saves a new questionnaire. The earlier one stays in your history.'
+      ? 'Saves as a new questionnaire. The old one stays in your history.'
       : professor
-        ? 'Describe what you are teaching and we’ll match resources for your students.'
-        : 'Tell us a little about your goals and we’ll match resources to you.'
+        ? 'Describe what you teach and we’ll match resources.'
+        : 'Tell us your goals and we’ll match resources.'
 
   return (
     <Page title={title} subtitle={subtitle} narrow breadcrumbs={[{ label: 'My questionnaires', to: '/questionnaires' }, { label: editId ? 'Edit' : fromId ? 'Retake' : 'New' }]}>
@@ -104,7 +104,7 @@ export default function QuestionnairePage() {
             onChange={(e) => (setForm({ ...form, level: e.target.value }), setErrors({ ...errors, level: '' }))}
             error={errors.level}
           />
-          <Checkboxes label="Formats (pick any, or none for all)" options={media} value={form.media} onChange={(v) => setForm({ ...form, media: v })} />
+          <Checkboxes label="Formats (optional)" options={media} value={form.media} onChange={(v) => setForm({ ...form, media: v })} />
           <Select label={professor ? 'Your students’ goal' : 'Your goal'} options={goals} placeholder="No particular goal" value={form.goal} onChange={(e) => setForm({ ...form, goal: e.target.value })} />
           <TextArea label="What specifically do you want to learn?" hint={`Optional · ${form.learningRequest.length}/${learningRequestMaxLength} characters. Used to search the web for extra resources; avoid personal information.`} placeholder="I'm learning Python and want to understand for loops and while loops with beginner-friendly examples." maxLength={learningRequestMaxLength} value={form.learningRequest} onChange={(e) => setForm({ ...form, learningRequest: e.target.value })} error={errors.learningRequest} />
           <Button type="submit" busy={busy} className="w-full">

@@ -8,6 +8,7 @@ import { ratingsFor } from '../lib/ratings.js'
 import { recommend } from '../lib/recommend.js'
 import { loadRules } from '../lib/rules.js'
 import { track } from '../lib/events.js'
+import { checkLink } from '../lib/linkCheck.js'
 import { db, RESOURCE_BUCKET } from '../lib/supabase.js'
 
 export const resourcesRouter = Router()
@@ -60,6 +61,11 @@ function parseResource(req: Request, user: CurrentUser, submitting: boolean) {
   return { title, description, url, file_path: filePath, subject, level, medium, goals }
 }
 
+// Nothing goes to review (and on to students) with a dead link
+async function assertLinkWorks(url: string | null) {
+  if (url && !process.env.VITEST && (await checkLink(url)) === 'broken') throw badRequest('That link doesn’t open a page. Check it and try again.')
+}
+
 // S1-12-T01 / S2-06-T02 Search the published library (professors; educators and admins can browse too).
 // Keyword matches the title or description and combines with all three filters. Only published
 // resources are searched (S2-06-T02-S2). Order (S2-06-T02-S3): title starts with the keyword,
@@ -99,6 +105,7 @@ resourcesRouter.post('/resources', requireRole('educator'), async (req, res) => 
   const user = currentUser(req)
   const submit = req.body?.submit === true
   const fields = parseResource(req, user, submit)
+  if (submit) await assertLinkWorks(fields.url)
   const resource = check(
     await db
       .from('resources')
@@ -180,6 +187,7 @@ resourcesRouter.patch('/resources/:id', requireRole('educator'), async (req, res
   let status = existing.status
   if (submit || existing.status === 'published') status = 'pending'
   else if (existing.status === 'rejected') status = 'draft'
+  if (status === 'pending' && (fields.url !== existing.url || existing.status !== 'pending')) await assertLinkWorks(fields.url)
 
   const resource = check(
     await db
@@ -200,7 +208,7 @@ resourcesRouter.post('/resources/:id/submit', requireRole('educator'), async (re
   assertOwner(existing, user)
   if (existing.status !== 'draft' && existing.status !== 'rejected') throw badRequest('Only drafts can be submitted for review.')
   req.body = { ...existing, filePath: existing.file_path }
-  parseResource(req, user, true)
+  await assertLinkWorks(parseResource(req, user, true).url)
   const resource = check(
     await db.from('resources').update({ status: 'pending', submitted_at: new Date().toISOString(), updated_at: new Date().toISOString() }).eq('id', existing.id).select(FIELDS).single(),
   )

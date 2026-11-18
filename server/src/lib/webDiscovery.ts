@@ -1,6 +1,7 @@
 import Anthropic from '@anthropic-ai/sdk'
 import { createHash } from 'node:crypto'
 import { discoveryTypes, goals, levels, media, subjects, type DiscoveryType, type Medium } from '../../../shared/vocabulary.js'
+import { checkLink } from './linkCheck.js'
 import type { Answers } from './recommend.js'
 
 export type WebResource = {
@@ -178,17 +179,6 @@ export async function discoverResources(answers: Answers, client: Messages = mes
   // Searches the model runs from inside code execution come back encrypted, so their URLs never
   // reach searchUrls and every suggestion fails the source check. Verify those links directly instead.
   const candidates = cleanResources(parsed, null, answers)
-  const live = await Promise.all(candidates.map(async (r) => ((await reachable(r.url)) ? r : null)))
+  const live = await Promise.all(candidates.map(async (r) => ((await checkLink(r.url, 4000)) !== 'broken' ? r : null)))
   return { resources: live.filter((r): r is WebResource => r !== null) }
-}
-
-/** True when the page exists. Bot-blocking (403/429) still counts: the page is there for people. */
-async function reachable(url: string): Promise<boolean> {
-  try {
-    const res = await fetch(url, { redirect: 'follow', signal: AbortSignal.timeout(4000), headers: { 'user-agent': 'Mozilla/5.0 ResourceLearning link check' } })
-    await res.body?.cancel()
-    return res.status < 400 || res.status === 403 || res.status === 429
-  } catch {
-    return false
-  }
 }

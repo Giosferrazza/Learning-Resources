@@ -41,7 +41,7 @@ const library: Seed[] = [
   ['PyCon US Talks', 'python', 'advanced', 'video', ['career', 'curiosity'], 'https://www.youtube.com/@PyConUS', 'Conference talks on advanced Python topics.'],
 
   // Excel
-  ['GCFGlobal Excel Tutorials', 'excel', 'beginner', 'article', ['class', 'curiosity'], 'https://edu.gcfglobal.org/en/excel/', 'Free step-by-step lessons for Excel basics.'],
+  ['GCFGlobal Excel Tutorials', 'excel', 'beginner', 'article', ['class', 'curiosity'], 'https://www.learnfree.org/series/excel-foundations', 'Free step-by-step lessons for Excel basics.'],
   ['Excel Practice Online', 'excel', 'beginner', 'tool', ['class', 'exam'], 'https://excel-practice-online.com/', 'Interactive Excel exercises that check your answers.'],
   ['Exceljet Formulas', 'excel', 'intermediate', 'article', ['career'], 'https://exceljet.net/formulas', 'Hundreds of formula examples with clear explanations.'],
   ['Leila Gharani', 'excel', 'intermediate', 'video', ['career'], 'https://www.youtube.com/@LeilaGharani', 'Video tutorials on Excel formulas, dashboards and automation.'],
@@ -65,7 +65,7 @@ const library: Seed[] = [
   ['Khan Academy: Intro to SQL', 'databases', 'beginner', 'video', ['class', 'curiosity'], 'https://www.khanacademy.org/computing/computer-programming/sql', 'Beginner-friendly SQL lessons with in-browser challenges.'],
   ['SQLBolt', 'databases', 'beginner', 'tool', ['class', 'exam'], 'https://sqlbolt.com/', 'Interactive SQL lessons you complete in the browser.'],
   ['PostgreSQL Tutorial', 'databases', 'intermediate', 'article', ['class', 'career'], 'https://www.postgresql.org/docs/current/tutorial.html', 'The official tutorial from the PostgreSQL documentation.'],
-  ['Mode SQL Tutorial', 'databases', 'intermediate', 'article', ['career'], 'https://mode.com/sql-tutorial/', 'SQL for analysis, from basic queries to window functions.'],
+  ['Mode SQL Tutorial', 'databases', 'intermediate', 'article', ['career'], 'https://www.thoughtspot.com/sql-tutorial', 'SQL for analysis, from basic queries to window functions.'],
   ['SQLZoo', 'databases', 'intermediate', 'tool', ['exam'], 'https://sqlzoo.net/', 'Graded SQL exercises from simple selects to joins.'],
   ['DB Fiddle', 'databases', 'intermediate', 'tool', ['class', 'exam'], 'https://www.db-fiddle.com/', 'Build a schema and run queries against several databases online.'],
   ['CMU Intro to Database Systems', 'databases', 'advanced', 'video', ['class', 'exam'], 'https://15445.courses.cs.cmu.edu/', "Carnegie Mellon's database internals course, lectures included."],

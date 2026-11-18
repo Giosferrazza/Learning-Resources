@@ -51,10 +51,10 @@ export type RecommendationResult<T extends Candidate> = { exact: boolean; items:
 export function recommend<T extends Candidate>(answers: Answers, resources: T[], limit = 20, rules: Rules = defaultRules): RecommendationResult<T> {
   const eligible = rules.requireSubject ? resources.filter((r) => r.subject === answers.topic) : resources
   const scored = eligible.map((r) => score(answers, r, rules))
-  const exact = scored.filter((s) => s.exact)
-  const pool = exact.length ? exact : scored
-  pool.sort(compare(answers))
-  return { exact: exact.length > 0, items: pool.slice(0, limit) }
+  // Exact matches first, then the closest partial matches so the page is never sparse
+  const exact = scored.filter((s) => s.exact).sort(compare(answers))
+  const closest = scored.filter((s) => !s.exact).sort(compare(answers))
+  return { exact: exact.length > 0, items: [...exact, ...closest].slice(0, limit) }
 }
 
 function score<T extends Candidate>(answers: Answers, r: T, { weights, requireSubject }: Rules): Recommendation<T> {

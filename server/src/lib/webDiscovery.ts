@@ -95,9 +95,12 @@ const oneOf = <T extends string>(value: unknown, allowed: Record<T, string>): T 
   return key in allowed ? (key as T) : null
 }
 
-/** Keep only well-formed resources whose link came from a real search result (exact page or same site). */
-export function cleanResources(raw: unknown, searchUrls: string[], answers: Answers): WebResource[] {
-  const pages = new Set(searchUrls.map(normalize).filter((u): u is string => !!u))
+/**
+ * Keep only well-formed resources whose link came from a real search result (exact page or same site).
+ * Pass null for searchUrls to skip the source check (the caller then verifies each link itself).
+ */
+export function cleanResources(raw: unknown, searchUrls: string[] | null, answers: Answers): WebResource[] {
+  const pages = new Set((searchUrls ?? []).map(normalize).filter((u): u is string => !!u))
   const sites = new Set([...pages].map(host))
   const items = (raw as { resources?: unknown } | null)?.resources
   if (!Array.isArray(items)) return []
@@ -109,7 +112,7 @@ export function cleanResources(raw: unknown, searchUrls: string[], answers: Answ
     const medium = oneOf(item?.medium, media)
     const title = clip(item?.title, 200)
     if (!url || !type || !medium || !title || seen.has(url)) continue
-    if (!pages.has(url) && !sites.has(host(url))) continue
+    if (searchUrls && !pages.has(url) && !sites.has(host(url))) continue
     if (answers.media.length && !answers.media.includes(medium)) continue
     seen.add(url)
     out.push({
@@ -159,12 +162,33 @@ export async function discoverResources(answers: Answers, client: Messages = mes
 
   // The structured answer is the last text block that parses as JSON.
   const texts = response.content.filter((b): b is Anthropic.Beta.BetaTextBlock => b.type === 'text').map((b) => b.text)
+  let parsed: unknown = undefined
   for (const text of texts.reverse()) {
     try {
-      return { resources: cleanResources(JSON.parse(text), searchUrls, answers) }
+      parsed = JSON.parse(text)
+      break
     } catch {
       // keep looking
     }
   }
-  throw new Error('Resource search returned no structured answer.')
+  if (parsed === undefined) throw new Error('Resource search returned no structured answer.')
+
+  const resources = cleanResources(parsed, searchUrls, answers)
+  if (resources.length) return { resources }
+  // Searches the model runs from inside code execution come back encrypted, so their URLs never
+  // reach searchUrls and every suggestion fails the source check. Verify those links directly instead.
+  const candidates = cleanResources(parsed, null, answers)
+  const live = await Promise.all(candidates.map(async (r) => ((await reachable(r.url)) ? r : null)))
+  return { resources: live.filter((r): r is WebResource => r !== null) }
+}
+
+/** True when the page exists. Bot-blocking (403/429) still counts: the page is there for people. */
+async function reachable(url: string): Promise<boolean> {
+  try {
+    const res = await fetch(url, { redirect: 'follow', signal: AbortSignal.timeout(4000), headers: { 'user-agent': 'Mozilla/5.0 ResourceLearning link check' } })
+    await res.body?.cancel()
+    return res.status < 400 || res.status === 403 || res.status === 429
+  } catch {
+    return false
+  }
 }

@@ -16,12 +16,13 @@ const res = (over: Partial<Candidate>): Candidate => ({
 const answers: Answers = { topic: 'python', level: 'beginner', media: ['video'], goal: 'exam' }
 
 describe('S1-07 exact-match recommendations', () => {
-  it('returns only exact matches when any exist', () => {
+  it('lists exact matches first, then the closest partial matches', () => {
     const exact = res({ title: 'Exact' })
-    const wrongLevel = res({ level: 'intermediate' })
+    const wrongLevel = res({ title: 'Wrong level', level: 'intermediate' })
     const result = recommend(answers, [wrongLevel, exact])
     expect(result.exact).toBe(true)
-    expect(result.items.map((i) => i.resource.title)).toEqual(['Exact'])
+    expect(result.items.map((i) => i.resource.title)).toEqual(['Exact', 'Wrong level'])
+    expect(result.items.map((i) => i.exact)).toEqual([true, false])
   })
 
   it('never recommends another subject', () => {
